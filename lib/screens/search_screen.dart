@@ -1,17 +1,17 @@
 import 'package:flutter/material.dart';
 
-class WatchllistScreen extends StatelessWidget {
+class SearchScreen extends StatelessWidget {
   const new({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return  Scaffold(
+    return Scaffold(
       appBar: AppBar(
-        title: const Text("Мой список"),
+        title: const Text ("Поиск"),
       ),
       body: const Center(
-        child: Text("Сохраненные аниме"),
-      )
+        child: Text("Поиск аниме"),
+      ),
     );
   }
 }
