@@ -10,7 +10,7 @@ class AccountScreen extends StatelessWidget {
         title: const Text("Профиль"),
       ),
       body: const Center(
-        child: const Text ("Аккаунт пользователя"),
+        child: Text ("Аккаунт пользователя"),
       ),
     );
   }
