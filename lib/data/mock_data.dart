@@ -16,6 +16,21 @@ class AnimeTitle {
   });
 }
 
+class Episode {
+  final int number;
+  final String title;
+  final String duration;
+  final String description;
+
+  const Episode({
+    required this.number,
+    required this.title,
+    required this.duration,
+    required this.description,
+  });
+}
+
+
 const mockTitles = [
   AnimeTitle(
     title: 'Frieren: Beyond Journey\'s End',
@@ -96,5 +111,44 @@ const mockTitles = [
     description:
         'Юная исследовательница Рико отправляется в загадочную Бездну '
         'в поисках своей пропавшей матери.',
+  ),
+];
+
+const mockEpisodes = [
+  Episode(
+    number: 1,
+    title: 'Конец путешествия',
+    duration: '24 мин',
+    description: 'Герои возвращаются домой после победы над Королём демонов.',
+  ),
+  Episode(
+    number: 2,
+    title: 'Не обязательно была магия',
+    duration: '24 мин',
+    description: 'Фрирен отправляется в новое путешествие.',
+  ),
+  Episode(
+    number: 3,
+    title: 'Убийственная магия',
+    duration: '24 мин',
+    description: 'Прошлое Фрирен начинает влиять на настоящее.',
+  ),
+  Episode(
+    number: 4,
+    title: 'Земля, где покоятся души',
+    duration: '24 мин',
+    description: 'Путешествие группы продолжается на север.',
+  ),
+  Episode(
+    number: 5,
+    title: 'Призраки мёртвых',
+    duration: '24 мин',
+    description: 'Герои сталкиваются с новой угрозой.',
+  ),
+  Episode(
+    number: 6,
+    title: 'Герой деревни',
+    duration: '24 мин',
+    description: 'Группа прибывает в небольшую деревню.',
   ),
 ];
