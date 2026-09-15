@@ -31,7 +31,7 @@ class SearchScreen extends StatelessWidget {
               children: [
                 FilterChip(
                   label: const Text("Все"),
-                  selected: false,
+                  selected: true,
                   onSelected: (_) {},
                 ),
                 const SizedBox(width: 8),

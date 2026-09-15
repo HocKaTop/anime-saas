@@ -33,9 +33,9 @@ class WatchllistScreen extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 16),
               children: [
                 FilterChip(label: const Text ("Все",), selected: true, onSelected: (_){}),
-                FilterChip(label: const Text ("Смотрю",), selected: true, onSelected: (_){}),
-                FilterChip(label: const Text ("Запланированные",), selected: true, onSelected: (_){}),
-                FilterChip(label: const Text ("Просмотрено",), selected: true, onSelected: (_){}),
+                FilterChip(label: const Text ("Смотрю",), selected: false, onSelected: (_){}),
+                FilterChip(label: const Text ("Запланированные",), selected: false, onSelected: (_){}),
+                FilterChip(label: const Text ("Просмотрено",), selected: false, onSelected: (_){}),
               ],
             ),
           ),
