@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../data/mock_data.dart';
 import '../widgets/title_card.dart';
+import './titile_details_screen.dart';
 
 
 class WatchllistScreen extends StatelessWidget {
@@ -44,11 +45,14 @@ class WatchllistScreen extends StatelessWidget {
             gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
               crossAxisCount: 2,
               crossAxisSpacing: 8,
-              mainAxisExtent: 8,
+              mainAxisSpacing: 8,
               childAspectRatio: 0.52
               ),
             itemBuilder:(context, index){
               return TitleCard(anime: watchlist[index],
+              onTap: (){
+                    Navigator.push(context, MaterialPageRoute(builder: (_)=> TitileDetailsScreen(anime: watchlist[index])));
+                  },
               );
             },
             ),

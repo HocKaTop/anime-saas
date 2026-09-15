@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../data/mock_data.dart';
 import '../widgets/title_card.dart';
+import './titile_details_screen.dart';
 
 class SearchScreen extends StatelessWidget {
   const new({super.key});
@@ -73,7 +74,11 @@ class SearchScreen extends StatelessWidget {
                 childAspectRatio: 0.52,
               ),
               itemBuilder: (context, index) {
-                return TitleCard(anime: mockTitles[index]);
+                return TitleCard(anime: mockTitles[index],
+                onTap: (){
+                    Navigator.push(context, MaterialPageRoute(builder: (_)=> TitileDetailsScreen(anime: mockTitles[index])));
+                  },
+                );
               },
             ),
           ),

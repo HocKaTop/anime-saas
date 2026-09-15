@@ -4,10 +4,13 @@ import '../data/mock_data.dart';
 
 class TitleCard extends StatelessWidget {
   final AnimeTitle anime;
+  final VoidCallback? onTap;
 
   const TitleCard({
     super.key,
-    required this.anime
+    required this.anime,
+    this.onTap
+
   });
 
 
@@ -19,7 +22,9 @@ class TitleCard extends StatelessWidget {
       width:150,
       child: Card(
         clipBehavior: Clip.antiAlias,
-        child: Column(
+        child: InkWell(
+          onTap: onTap,
+          child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children:[
             Container(
@@ -76,6 +81,7 @@ class TitleCard extends StatelessWidget {
           ], // children внешнего Column
         ), // внешний Column
       ), // Card
+      ),
     ); // SizedBox
   } // build
 } // TitleCard
