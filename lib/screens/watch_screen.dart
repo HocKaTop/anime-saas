@@ -59,7 +59,11 @@ class WatchScreen extends StatelessWidget {
             Expanded(child: OutlinedButton.icon(onPressed: (){}, icon: const Icon(Icons.skip_previous), label: const Text("Предыдущая"),))
           ],),
           const SizedBox(height: 8),
-          Expanded(child: FilledButton.icon(onPressed: (){}, icon: const Icon(Icons.skip_next), label: const Text ("Следующая"))),
+          Row(
+            children: [
+              Expanded(child: FilledButton.icon(onPressed: (){}, icon: const Icon(Icons.skip_next), label: const Text ("Следующая"))),
+            ],
+          ),
           const SizedBox(height: 24,),
           Card(
             child: ListTile(

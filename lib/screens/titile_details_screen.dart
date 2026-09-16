@@ -27,7 +27,7 @@ class TitileDetailsScreen extends StatelessWidget {
             child: Icon(
               Icons.movie_outlined,
               size: 96,
-              color: scheme.primaryContainer,
+              color: scheme.onPrimaryContainer,
             ),
           ),
           const SizedBox(height: 20),

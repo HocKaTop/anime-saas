@@ -43,6 +43,7 @@ class RegisterScreen extends StatelessWidget {
               prefixIcon: Icon(Icons.password_outlined),
 
             ),
+            obscureText: true,
           ),
           const SizedBox(height: 16),
           const TextField(
@@ -52,6 +53,7 @@ class RegisterScreen extends StatelessWidget {
               prefixIcon: Icon(Icons.lock_outline),
 
             ),
+            obscureText: true,
           ),
           const SizedBox(height: 16),
           FilledButton(onPressed: (){}, child: const Text("Зарегестрироваться"))
