@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
-import 'login_screen.dart';
+import 'package:go_router/go_router.dart';
+
+
 
 class AccountScreen extends StatelessWidget {
   const new({super.key});
@@ -39,8 +41,7 @@ class AccountScreen extends StatelessWidget {
           ),
           const SizedBox(height: 24),
           FilledButton.icon(onPressed: (){
-            Navigator.push(context, MaterialPageRoute(builder: (_)=> LoginScreen(),
-            ),);
+            context.push('/login');
           },icon: const Icon(Icons.login),
            label: const Text('Войти')
            ),

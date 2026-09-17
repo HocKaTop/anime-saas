@@ -1,3 +1,4 @@
+import 'package:animesaas/router.dart';
 import 'package:flutter/material.dart';
 import 'screens/main_screen.dart';
 
@@ -10,7 +11,7 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
+    return MaterialApp.router(
       title: 'CreepyOleg',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
@@ -19,7 +20,7 @@ class MyApp extends StatelessWidget {
         ),
         useMaterial3: true,
       ),
-      home: const MainScreen(),
+      routerConfig: router,
     );
   }
 }

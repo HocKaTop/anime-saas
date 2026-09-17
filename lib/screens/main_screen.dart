@@ -1,39 +1,56 @@
 import 'package:flutter/material.dart';
 
-import 'browse_screen.dart';
-import 'search_screen.dart';
-import 'watchlist_screen.dart';
-import 'account_screen.dart';
+import 'package:go_router/go_router.dart';
 
-class MainScreen extends StatefulWidget {
-  const MainScreen({super.key});
+class MainScreen extends StatelessWidget {
+  final Widget child;
 
-  @override
-  State<MainScreen> createState() => _MainScreenState();
-}
+  const MainScreen({
+    super.key,
+    required this.child
+  });
 
-class _MainScreenState extends State<MainScreen> {
-  int currentPageIndex = 0;
+  int _getCurrentIndex(BuildContext context){
+    final location = GoRouterState.of(context).uri.path;
 
-  final List<Widget> pages = const [
-    BrowseScreen(),
-    SearchScreen(),
-    WatchllistScreen(),
-    AccountScreen(),
-  ];
+    if (location.startsWith('/search')){
+      return 1;
+    }
+
+    if (location.startsWith('/watchlist')){
+      return 2;
+    }
+
+    if (location.startsWith('/account')){
+      return 3;
+    }
+    return 0;
+    }
 
   @override
   Widget build(BuildContext context) {
+    final currentIndex = _getCurrentIndex(context);
+
     return Scaffold(
-      body: pages[currentPageIndex],
-
+      body: child,
       bottomNavigationBar: NavigationBar(
-        selectedIndex: currentPageIndex,
+        selectedIndex: currentIndex,
 
-        onDestinationSelected: (int index) {
-          setState(() {
-            currentPageIndex = index;
-          });
+        onDestinationSelected: (index) {
+          switch(index){
+            case 0:
+              context.go('/browse');
+              break;
+            case 1:
+              context.go('/search');
+              break;
+            case 2:
+              context.go('/watchlist');
+              break;
+            case 3:
+              context.go('/account');
+              break;
+          }
         },
 
         destinations: const [

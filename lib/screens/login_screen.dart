@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 import 'register_screen.dart';
 
@@ -64,12 +65,7 @@ class LoginScreen extends StatelessWidget {
 
           TextButton(
             onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => const RegisterScreen(),
-                ),
-              );
+              context.push('/register');
             },
             child: const Text('Нет аккаунта? Зарегистрироваться'),
           ),
