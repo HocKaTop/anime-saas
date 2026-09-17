@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:animesaas/data/mock_data.dart';
 import 'package:animesaas/widgets/episode_card.dart';
-
-import 'watch_screen.dart';
+import 'package:go_router/go_router.dart';
 
 class TitileDetailsScreen extends StatelessWidget {
   final AnimeTitle anime;
@@ -12,7 +11,7 @@ class TitileDetailsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-
+    final episodes = episodesForTitle(anime.slug);
     return Scaffold(
       appBar: AppBar(title: Text(anime.title)),
       body: ListView(
@@ -67,20 +66,8 @@ class TitileDetailsScreen extends StatelessWidget {
           const SizedBox(height: 24),
           Text("Эпизоды", style: Theme.of(context).textTheme.titleLarge),
           const SizedBox(height: 8),
-          ...mockEpisodes.map(
-            (episode) => EpisodeCard(
-              number: episode.number,
-              title: episode.title,
-              duration: episode.duration,
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => WatchScreen(anime: anime, episode: episode),
-                  ),
-                );
-              },
-            ),
+          ...episodes.map(
+            (episode)=> EpisodeCard(number: episode.number, title: episode.title, duration: episode.duration, onTap: (){context.push("/watch/${episode.id}");})
           ),
         ],
       ),

@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 import '../data/mock_data.dart';
 import '../widgets/title_card.dart';
-import './titile_details_screen.dart';
-
 
 class WatchllistScreen extends StatelessWidget {
   const new({super.key});
@@ -51,7 +50,7 @@ class WatchllistScreen extends StatelessWidget {
             itemBuilder:(context, index){
               return TitleCard(anime: watchlist[index],
               onTap: (){
-                    Navigator.push(context, MaterialPageRoute(builder: (_)=> TitileDetailsScreen(anime: watchlist[index])));
+                context.push("/titles/${watchlist[index].slug}");
                   },
               );
             },

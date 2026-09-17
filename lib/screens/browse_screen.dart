@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import '../data/mock_data.dart';
 import '../widgets/title_card.dart';
-import './titile_details_screen.dart';
 
 class BrowseScreen extends StatelessWidget {
   const new({super.key});
@@ -67,7 +67,7 @@ class BrowseScreen extends StatelessWidget {
                 return TitleCard(
                   anime: titles[index],
                   onTap: (){
-                    Navigator.push(context, MaterialPageRoute(builder: (_)=> TitileDetailsScreen(anime: titles[index])));
+                  context.push('/titles/${titles[index].slug}');
                   },
                   );
               },

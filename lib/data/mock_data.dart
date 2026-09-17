@@ -1,28 +1,34 @@
 class AnimeTitle {
+  final String slug;
   final String title;
   final String genre;
   final int year;
+  final double rating;
   final String description;
   final int episodes;
-  final double rating;
 
   const AnimeTitle({
+    required this.slug,
     required this.title,
     required this.genre,
     required this.year,
+    required this.rating,
     required this.description,
     required this.episodes,
-    required this.rating,
   });
 }
 
 class Episode {
+  final String id;
+  final String titleSlug;
   final int number;
   final String title;
   final String duration;
   final String description;
 
   const Episode({
+    required this.id,
+    required this.titleSlug,
     required this.number,
     required this.title,
     required this.duration,
@@ -30,10 +36,10 @@ class Episode {
   });
 }
 
-
 const mockTitles = [
   AnimeTitle(
     title: 'Frieren: Beyond Journey\'s End',
+    slug: "frieren-beyond-journey",
     genre: 'Fantasy',
     year: 2023,
     rating: 9.3,
@@ -44,6 +50,7 @@ const mockTitles = [
   ),
   AnimeTitle(
     title: 'Attack on Titan',
+    slug: "attack-on-titan",
     genre: 'Action',
     year: 2013,
     rating: 9.1,
@@ -54,6 +61,7 @@ const mockTitles = [
   ),
   AnimeTitle(
     title: 'Cyberpunk: Edgerunners',
+    slug: "cyberpunk-edgerunners",
     genre: 'Sci-Fi',
     year: 2022,
     rating: 8.6,
@@ -64,6 +72,7 @@ const mockTitles = [
   ),
   AnimeTitle(
     title: 'Chainsaw Man',
+    slug: "chainsaw-man",
     genre: 'Action',
     year: 2022,
     rating: 8.4,
@@ -74,6 +83,7 @@ const mockTitles = [
   ),
   AnimeTitle(
     title: 'Vinland Saga',
+    slug: "vinland-saga",
     genre: 'Drama',
     year: 2019,
     rating: 8.8,
@@ -84,6 +94,7 @@ const mockTitles = [
   ),
   AnimeTitle(
     title: 'Jujutsu Kaisen',
+    slug: "jujutsu-kaisen",
     genre: 'Action',
     year: 2020,
     rating: 8.6,
@@ -94,6 +105,7 @@ const mockTitles = [
   ),
   AnimeTitle(
     title: 'Steins;Gate',
+    slug: "steins-gate",
     genre: 'Sci-Fi',
     year: 2011,
     rating: 9.0,
@@ -104,6 +116,7 @@ const mockTitles = [
   ),
   AnimeTitle(
     title: 'Made in Abyss',
+    slug: "made-in-abyss",
     genre: 'Adventure',
     year: 2017,
     rating: 8.7,
@@ -114,41 +127,95 @@ const mockTitles = [
   ),
 ];
 
-const mockEpisodes = [
+const _frierenEpisodes = [
   Episode(
+    id: 'frieren-beyond-journey-1',
+    titleSlug: 'frieren-beyond-journey',
     number: 1,
     title: 'Конец путешествия',
     duration: '24 мин',
     description: 'Герои возвращаются домой после победы над Королём демонов.',
   ),
   Episode(
+    id: 'frieren-beyond-journey-2',
+    titleSlug: 'frieren-beyond-journey',
     number: 2,
     title: 'Не обязательно была магия',
     duration: '24 мин',
     description: 'Фрирен отправляется в новое путешествие.',
   ),
   Episode(
+    id: 'frieren-beyond-journey-3',
+    titleSlug: 'frieren-beyond-journey',
     number: 3,
     title: 'Убийственная магия',
     duration: '24 мин',
     description: 'Прошлое Фрирен начинает влиять на настоящее.',
   ),
   Episode(
+    id: 'frieren-beyond-journey-4',
+    titleSlug: 'frieren-beyond-journey',
     number: 4,
     title: 'Земля, где покоятся души',
     duration: '24 мин',
     description: 'Путешествие группы продолжается на север.',
   ),
   Episode(
+    id: 'frieren-beyond-journey-5',
+    titleSlug: 'frieren-beyond-journey',
     number: 5,
     title: 'Призраки мёртвых',
     duration: '24 мин',
     description: 'Герои сталкиваются с новой угрозой.',
   ),
   Episode(
+    id: 'frieren-beyond-journey-6',
+    titleSlug: 'frieren-beyond-journey',
     number: 6,
     title: 'Герой деревни',
     duration: '24 мин',
     description: 'Группа прибывает в небольшую деревню.',
   ),
 ];
+
+final List<Episode> mockEpisodes = List<Episode>.unmodifiable([
+  for (final anime in mockTitles)
+    for (var number = 1; number <= anime.episodes; number++)
+      if (anime.slug == 'frieren-beyond-journey' &&
+          number <= _frierenEpisodes.length)
+        _frierenEpisodes[number - 1]
+      else
+        Episode(
+          id: '${anime.slug}-$number',
+          titleSlug: anime.slug,
+          number: number,
+          title: 'Серия $number',
+          duration: '24 мин',
+          description:
+              'Демонстрационный эпизод $number тайтла «${anime.title}».',
+        ),
+]);
+
+AnimeTitle? findTitleBySlug(String slug) {
+  for (final anime in mockTitles) {
+    if (anime.slug == slug) {
+      return anime;
+    }
+  }
+
+  return null;
+}
+
+Episode? findEpisodeById(String id) {
+  for (final episode in mockEpisodes) {
+    if (episode.id == id) {
+      return episode;
+    }
+  }
+
+  return null;
+}
+
+List<Episode> episodesForTitle(String slug) {
+  return mockEpisodes.where((episode) => episode.titleSlug == slug).toList();
+}

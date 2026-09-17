@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-
 import "package:animesaas/data/mock_data.dart";
 
 class WatchScreen extends StatelessWidget {
