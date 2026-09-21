@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-
+import '../router_names.dart';
 
 
 class AccountScreen extends StatelessWidget {
@@ -41,7 +41,7 @@ class AccountScreen extends StatelessWidget {
           ),
           const SizedBox(height: 24),
           FilledButton.icon(onPressed: (){
-            context.push('/login');
+            context.pushNamed(RouteNames.login);
           },icon: const Icon(Icons.login),
            label: const Text('Войти')
            ),

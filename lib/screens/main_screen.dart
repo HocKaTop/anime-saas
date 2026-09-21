@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-
+import '../router_names.dart';
 import 'package:go_router/go_router.dart';
 
 class MainScreen extends StatelessWidget {
@@ -39,16 +39,16 @@ class MainScreen extends StatelessWidget {
         onDestinationSelected: (index) {
           switch(index){
             case 0:
-              context.go('/browse');
+              context.goNamed(RouteNames.browse);
               break;
             case 1:
-              context.go('/search');
+              context.goNamed(RouteNames.search);
               break;
             case 2:
-              context.go('/watchlist');
+              context.goNamed(RouteNames.watchlist);
               break;
             case 3:
-              context.go('/account');
+              context.goNamed(RouteNames.account);
               break;
           }
         },

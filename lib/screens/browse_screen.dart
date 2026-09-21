@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../data/mock_data.dart';
 import '../widgets/title_card.dart';
-
+import '../router_names.dart';
 class BrowseScreen extends StatelessWidget {
   const new({super.key});
 
@@ -67,7 +67,12 @@ class BrowseScreen extends StatelessWidget {
                 return TitleCard(
                   anime: titles[index],
                   onTap: (){
-                  context.push('/titles/${titles[index].slug}');
+                  context.pushNamed(
+                    RouteNames.titleDetails,
+                    pathParameters: {
+                      'slug':titles[index].slug,
+                    }
+                  );
                   },
                   );
               },

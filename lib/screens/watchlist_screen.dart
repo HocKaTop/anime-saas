@@ -3,6 +3,8 @@ import 'package:go_router/go_router.dart';
 
 import '../data/mock_data.dart';
 import '../widgets/title_card.dart';
+import '../router_names.dart';
+
 
 class WatchllistScreen extends StatelessWidget {
   const new({super.key});
@@ -50,7 +52,12 @@ class WatchllistScreen extends StatelessWidget {
             itemBuilder:(context, index){
               return TitleCard(anime: watchlist[index],
               onTap: (){
-                context.push("/titles/${watchlist[index].slug}");
+                context.pushNamed(
+                  RouteNames.watchlist,
+                  pathParameters: {
+                    'slug':watchlist[index].slug,
+                  }
+                );
                   },
               );
             },

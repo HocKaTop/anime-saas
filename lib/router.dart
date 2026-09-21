@@ -9,11 +9,23 @@ import 'screens/login_screen.dart';
 import 'screens/register_screen.dart';
 import 'data/mock_data.dart';
 
+import "router_names.dart";
+
 import 'screens/titile_details_screen.dart';
 import 'screens/watch_screen.dart';
 
 final GoRouter router = GoRouter(
   initialLocation: '/browse',
+
+  errorBuilder: (context,state){
+    return Scaffold(
+      appBar: AppBar(title: const Text("Ошибка"),
+      ),
+      body: const Center(
+        child: Text("Страница не найдена"),
+      ),
+    );
+  },
 
   routes: [
     ShellRoute(
@@ -25,6 +37,7 @@ final GoRouter router = GoRouter(
 
       routes: [
         GoRoute(
+          name: RouteNames.browse,
           path: '/browse',
           builder: (context, state) {
             return const BrowseScreen();
@@ -32,6 +45,7 @@ final GoRouter router = GoRouter(
         ),
 
         GoRoute(
+          name: RouteNames.search,
           path: '/search',
           builder: (context, state) {
             return const SearchScreen();
@@ -39,6 +53,7 @@ final GoRouter router = GoRouter(
         ),
 
         GoRoute(
+          name: RouteNames.watchlist,
           path: '/watchlist',
           builder: (context, state) {
             return const WatchllistScreen();
@@ -46,6 +61,7 @@ final GoRouter router = GoRouter(
         ),
 
         GoRoute(
+          name: RouteNames.account,
           path: '/account',
           builder: (context, state) {
             return const AccountScreen();
@@ -54,6 +70,7 @@ final GoRouter router = GoRouter(
       ],
     ),
     GoRoute(
+    name: RouteNames.titleDetails,
     path: '/titles/:slug',
     builder: (context, state) {
     final slug = state.pathParameters['slug']!;
@@ -74,6 +91,7 @@ final GoRouter router = GoRouter(
 ),
 
 GoRoute(
+  name: RouteNames.watch,
   path: '/watch/:episodeId',
   builder: (context, state) {
     final episodeId = state.pathParameters['episodeId']!;
@@ -107,6 +125,7 @@ GoRoute(
 ),
 
     GoRoute(
+      name: RouteNames.login,
       path: '/login',
       builder: (context, state) {
         return const LoginScreen();
@@ -114,6 +133,7 @@ GoRoute(
     ),
 
     GoRoute(
+      name: RouteNames.register,
       path: '/register',
       builder: (context, state) {
         return const RegisterScreen();
