@@ -1,3 +1,4 @@
+import '../domain/anime_title.dart';
 import 'package:flutter/material.dart';
 import 'package:animesaas/data/mock_data.dart';
 import 'package:animesaas/widgets/episode_card.dart';

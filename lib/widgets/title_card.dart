@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../data/mock_data.dart';
+import '../domain/anime_title.dart';
 
 
 class TitleCard extends StatelessWidget {
