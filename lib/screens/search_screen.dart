@@ -1,15 +1,44 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
 
-import '../data/mock_data.dart';
-import '../widgets/title_card.dart';
+import '../models/catalog_model.dart';
 import '../router_names.dart';
+import '../widgets/error_view.dart';
+import '../widgets/title_card.dart';
 
 class SearchScreen extends StatelessWidget {
-  const new({super.key});
+  const SearchScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final catalog = context.watch<CatalogModel>();
+    Widget content;
+    if (catalog.isLoading){
+      content = const Center(
+        child:CircularProgressIndicator(),
+      );
+    } else if (catalog.error != null){
+      content= ErrorView(message: catalog.error!, onRetry: () { context.read<CatalogModel>().load();});
+    } else {
+      content = GridView.builder(
+        padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+        itemCount: catalog.titles.length,
+        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: 2,
+          crossAxisSpacing: 8,
+          childAspectRatio: 0.52,
+        ),
+         itemBuilder:(context,index){
+          final anime=catalog.titles[index];
+          return TitleCard(anime: anime, onTap: (){
+            context.pushNamed(RouteNames.titleDetails,
+            pathParameters: {'slug':anime.slug,},);
+          },);
+         }
+         );
+    }
+
     return Scaffold(
       appBar: AppBar(title: const Text("Поиск")),
       body: Column(
@@ -65,28 +94,7 @@ class SearchScreen extends StatelessWidget {
           ),
           const SizedBox(height: 16),
           Expanded(
-            child: GridView.builder(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-              itemCount: mockTitles.length,
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 2,
-                crossAxisSpacing: 8,
-                mainAxisSpacing: 8,
-                childAspectRatio: 0.52,
-              ),
-              itemBuilder: (context, index) {
-                return TitleCard(anime: mockTitles[index],
-                onTap: (){
-                  context.pushNamed(
-                    RouteNames.titleDetails,
-                    pathParameters: {
-                      'slug':mockTitles[index].slug,
-                    }
-                  );
-                  },
-                );
-              },
-            ),
+            child: content,
           ),
         ],
       ),
