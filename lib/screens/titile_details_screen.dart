@@ -1,8 +1,10 @@
 import '../domain/anime_title.dart';
+
 import 'package:flutter/material.dart';
 import 'package:animesaas/data/mock_data.dart';
 import 'package:animesaas/widgets/episode_card.dart';
 import 'package:go_router/go_router.dart';
+
 import '../router_names.dart';
 
 class TitileDetailsScreen extends StatelessWidget {
@@ -69,15 +71,17 @@ class TitileDetailsScreen extends StatelessWidget {
           Text("Эпизоды", style: Theme.of(context).textTheme.titleLarge),
           const SizedBox(height: 8),
           ...episodes.map(
-            (episode)=> EpisodeCard(number: episode.number, title: episode.title, duration: episode.duration, onTap: (){
-              context.pushNamed(
-                RouteNames.titleDetails,
-                pathParameters: {
-                  'episodeId': episode.id,
-                }
-              );
-              }
-              )
+            (episode) => EpisodeCard(
+              number: episode.number,
+              title: episode.title,
+              duration: episode.duration,
+              onTap: () {
+                context.pushNamed(
+                  RouteNames.watch,
+                  pathParameters: {'episodeId': episode.id},
+                );
+              },
+            ),
           ),
         ],
       ),
