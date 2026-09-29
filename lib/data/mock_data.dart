@@ -1,5 +1,6 @@
 import '../domain/anime_title.dart';
 import '../domain/episode.dart';
+import '../domain/watch_progress.dart';
 
 const mockTitles = [
   AnimeTitle(
@@ -103,6 +104,17 @@ const mockTitles = [
 const mockWatchlistTitleIds = <String>[
   '1',
   '3',
+];
+
+const mockProgress = [
+  WatchProgress(
+    episodeId: 'frieren-1',
+    progress: 0.35,
+  ),
+  WatchProgress(
+    episodeId: 'frieren-2',
+    progress: 1.0,
+  ),
 ];
 
 const _frierenEpisodes = [

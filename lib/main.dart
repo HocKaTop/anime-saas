@@ -8,11 +8,14 @@ import 'models/episode_model.dart';
 import 'repositories/mock_episode_repository.dart';
 import 'models/watchlist_model.dart';
 import 'repositories/mock_watchlist_repository.dart';
+import 'models/progress_model.dart';
+import 'repositories/mock_progress_repository.dart';
 
 void main() {
   final titleRepository = MockTitleRepository();
   final episodeRepository = MockEpisodeRepository();
   final watchlistRepository = MockWatchlistRepository();
+  final progressRepository = MockProgressRepository();
 
   runApp(
     MultiProvider(
@@ -20,6 +23,7 @@ void main() {
         Provider<MockTitleRepository>.value(value: titleRepository),
         Provider<MockEpisodeRepository>.value(value: episodeRepository),
         Provider<MockWatchlistRepository>.value(value: watchlistRepository),
+        Provider<MockProgressRepository>.value(value: progressRepository),
         ChangeNotifierProvider(
           create: (_) => CatalogModel(titleRepository)..load(),
         ),
@@ -28,6 +32,9 @@ void main() {
         ),
         ChangeNotifierProvider(
           create: (_) => WatchlistModel(watchlistRepository)..load(),
+        ),
+        ChangeNotifierProvider(
+          create: (_) => ProgressModel(progressRepository),
         ),
       ],
       child: const MyApp(),
