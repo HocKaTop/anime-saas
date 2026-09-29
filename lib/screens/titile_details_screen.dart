@@ -1,21 +1,43 @@
-import '../domain/anime_title.dart';
-
 import 'package:flutter/material.dart';
 import 'package:animesaas/data/mock_data.dart';
 import 'package:animesaas/widgets/episode_card.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
+
+import '../models/catalog_model.dart';
+import '../widgets/error_view.dart';
 
 import '../router_names.dart';
 
 class TitileDetailsScreen extends StatelessWidget {
-  final AnimeTitle anime;
+  final String slug;
 
-  const TitileDetailsScreen({super.key, required this.anime});
+  const TitileDetailsScreen({super.key, required this.slug});
 
   @override
   Widget build(BuildContext context) {
+    final catalog = context.watch<CatalogModel>();
+    final anime = catalog.bySlug(slug);
+
+    if (catalog.isLoading) {
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
+
+    if (catalog.error != null) {
+      return Scaffold(
+        body: ErrorView(
+          message: catalog.error!,
+          onRetry: () => context.read<CatalogModel>().load(),
+        ),
+      );
+    }
+
+    if (anime == null) {
+      return const Scaffold(body: Center(child: Text('Тайтл не найден')));
+    }
+
     final scheme = Theme.of(context).colorScheme;
-    final episodes = episodesForTitle(anime.slug);
+    final episodes = episodesForTitle(slug);
     return Scaffold(
       appBar: AppBar(title: Text(anime.title)),
       body: ListView(

@@ -1,5 +1,6 @@
 import 'package:go_router/go_router.dart';
 import 'package:flutter/material.dart';
+
 import 'screens/main_screen.dart';
 import 'screens/browse_screen.dart';
 import 'screens/search_screen.dart';
@@ -17,22 +18,17 @@ import 'screens/watch_screen.dart';
 final GoRouter router = GoRouter(
   initialLocation: '/browse',
 
-  errorBuilder: (context,state){
+  errorBuilder: (context, state) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Ошибка"),
-      ),
-      body: const Center(
-        child: Text("Страница не найдена"),
-      ),
+      appBar: AppBar(title: const Text("Ошибка")),
+      body: const Center(child: Text("Страница не найдена")),
     );
   },
 
   routes: [
     ShellRoute(
       builder: (context, state, child) {
-        return MainScreen(
-          child: child,
-        );
+        return MainScreen(child: child);
       },
 
       routes: [
@@ -70,59 +66,34 @@ final GoRouter router = GoRouter(
       ],
     ),
     GoRoute(
-    name: RouteNames.titleDetails,
-    path: '/titles/:slug',
-    builder: (context, state) {
-    final slug = state.pathParameters['slug']!;
-    final anime = findTitleBySlug(slug);
+      name: RouteNames.titleDetails,
+      path: '/titles/:slug',
+      builder: (context, state) {
+        final slug = state.pathParameters['slug']!;
+        return TitileDetailsScreen(slug: slug);
+      },
+    ),
 
-    if (anime == null) {
-      return const Scaffold(
-        body: Center(
-          child: Text('Тайтл не найден'),
-        ),
-      );
-    }
+    GoRoute(
+      name: RouteNames.watch,
+      path: '/watch/:episodeId',
+      builder: (context, state) {
+        final episodeId = state.pathParameters['episodeId']!;
+        final episode = findEpisodeById(episodeId);
 
-    return TitileDetailsScreen(
-      anime: anime,
-    );
-  },
-),
+        if (episode == null) {
+          return const Scaffold(body: Center(child: Text('Эпизод не найден')));
+        }
 
-GoRoute(
-  name: RouteNames.watch,
-  path: '/watch/:episodeId',
-  builder: (context, state) {
-    final episodeId = state.pathParameters['episodeId']!;
-    final episode = findEpisodeById(episodeId);
+        final anime = findTitleBySlug(episode.titleSlug);
 
-    if (episode == null) {
-      return const Scaffold(
-        body: Center(
-          child: Text('Эпизод не найден'),
-        ),
-      );
-    }
+        if (anime == null) {
+          return const Scaffold(body: Center(child: Text('Тайтл не найден')));
+        }
 
-    final anime = findTitleBySlug(
-      episode.titleSlug,
-    );
-
-    if (anime == null) {
-      return const Scaffold(
-        body: Center(
-          child: Text('Тайтл не найден'),
-        ),
-      );
-    }
-
-    return WatchScreen(
-      anime: anime,
-      episode: episode,
-    );
-  },
-),
+        return WatchScreen(anime: anime, episode: episode);
+      },
+    ),
 
     GoRoute(
       name: RouteNames.login,
