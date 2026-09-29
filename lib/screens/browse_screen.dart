@@ -16,7 +16,16 @@ class BrowseScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final catalog = context.watch<CatalogModel>();
     return Scaffold(
-      appBar: AppBar(title: const Text("Creepy Oleg")),
+      appBar: AppBar(
+        title: const Text('Creepy Oleg'),
+        actions: [
+          IconButton(
+            onPressed: () => context.read<CatalogModel>().load(),
+            icon: const Icon(Icons.refresh),
+            tooltip: 'Обновить',
+          ),
+        ],
+      ),
       body: _buildBody(context, catalog),
     );
   }
