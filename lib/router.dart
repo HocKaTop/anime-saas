@@ -8,7 +8,6 @@ import 'screens/watchlist_screen.dart';
 import 'screens/account_screen.dart';
 import 'screens/login_screen.dart';
 import 'screens/register_screen.dart';
-import 'data/mock_data.dart';
 
 import "router_names.dart";
 
@@ -79,19 +78,7 @@ final GoRouter router = GoRouter(
       path: '/watch/:episodeId',
       builder: (context, state) {
         final episodeId = state.pathParameters['episodeId']!;
-        final episode = findEpisodeById(episodeId);
-
-        if (episode == null) {
-          return const Scaffold(body: Center(child: Text('Эпизод не найден')));
-        }
-
-        final anime = findTitleBySlug(episode.titleSlug);
-
-        if (anime == null) {
-          return const Scaffold(body: Center(child: Text('Тайтл не найден')));
-        }
-
-        return WatchScreen(anime: anime, episode: episode);
+        return WatchScreen(episodeId: episodeId);
       },
     ),
 
