@@ -1,31 +1,33 @@
 import 'package:flutter/material.dart';
+
 import '../router_names.dart';
+
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
+
+import '../models/watchlist_model.dart';
 
 class MainScreen extends StatelessWidget {
   final Widget child;
 
-  const MainScreen({
-    super.key,
-    required this.child
-  });
+  const MainScreen({super.key, required this.child});
 
-  int _getCurrentIndex(BuildContext context){
+  int _getCurrentIndex(BuildContext context) {
     final location = GoRouterState.of(context).uri.path;
 
-    if (location.startsWith('/search')){
+    if (location.startsWith('/search')) {
       return 1;
     }
 
-    if (location.startsWith('/watchlist')){
+    if (location.startsWith('/watchlist')) {
       return 2;
     }
 
-    if (location.startsWith('/account')){
+    if (location.startsWith('/account')) {
       return 3;
     }
     return 0;
-    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -37,7 +39,7 @@ class MainScreen extends StatelessWidget {
         selectedIndex: currentIndex,
 
         onDestinationSelected: (index) {
-          switch(index){
+          switch (index) {
             case 0:
               context.goNamed(RouteNames.browse);
               break;
@@ -67,8 +69,8 @@ class MainScreen extends StatelessWidget {
           ),
 
           NavigationDestination(
-            icon: Icon(Icons.bookmark_border),
-            selectedIcon: Icon(Icons.bookmark),
+            icon: _WatchlistIcon(selected: false),
+            selectedIcon: _WatchlistIcon(selected: true),
             label: 'Мой список',
           ),
 
@@ -79,6 +81,26 @@ class MainScreen extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _WatchlistIcon extends StatelessWidget {
+  final bool selected;
+
+  const _WatchlistIcon({required this.selected});
+
+  @override
+  Widget build(BuildContext context) {
+    return Consumer<WatchlistModel>(
+      builder: (context, watchlist, child) {
+        return Badge(
+          isLabelVisible: watchlist.count > 0,
+          label: Text('${watchlist.count}'),
+          child: child,
+        );
+      },
+      child: Icon(selected ? Icons.bookmark : Icons.bookmark_border),
     );
   }
 }

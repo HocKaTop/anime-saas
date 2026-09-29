@@ -3,6 +3,7 @@ import '../domain/episode.dart';
 
 const mockTitles = [
   AnimeTitle(
+    id:"1",
     title: 'Frieren: Beyond Journey\'s End',
     slug: "frieren-beyond-journey",
     genre: 'Fantasy',
@@ -14,6 +15,7 @@ const mockTitles = [
         'в новое путешествие, пытаясь лучше понять людей и своих бывших спутников.',
   ),
   AnimeTitle(
+    id:"2",
     title: 'Attack on Titan',
     slug: "attack-on-titan",
     genre: 'Action',
@@ -25,6 +27,7 @@ const mockTitles = [
         'После разрушения одной из стен Эрен начинает борьбу за свободу.',
   ),
   AnimeTitle(
+    id:"3",
     title: 'Cyberpunk: Edgerunners',
     slug: "cyberpunk-edgerunners",
     genre: 'Sci-Fi',
@@ -36,6 +39,7 @@ const mockTitles = [
         'становится наёмником и погружается в опасный мир киберпанка.',
   ),
   AnimeTitle(
+    id:"4",
     title: 'Chainsaw Man',
     slug: "chainsaw-man",
     genre: 'Action',
@@ -47,6 +51,7 @@ const mockTitles = [
         'с демоном Почитой полностью не меняет его жизнь.',
   ),
   AnimeTitle(
+    id:"5",
     title: 'Vinland Saga',
     slug: "vinland-saga",
     genre: 'Drama',
@@ -58,6 +63,7 @@ const mockTitles = [
         'мести за своего отца.',
   ),
   AnimeTitle(
+    id:"6",
     title: 'Jujutsu Kaisen',
     slug: "jujutsu-kaisen",
     genre: 'Action',
@@ -69,6 +75,7 @@ const mockTitles = [
         'как получает силу чрезвычайно опасного духа.',
   ),
   AnimeTitle(
+    id:"7",
     title: 'Steins;Gate',
     slug: "steins-gate",
     genre: 'Sci-Fi',
@@ -80,6 +87,7 @@ const mockTitles = [
         'в прошлое и сталкивается с последствиями изменения времени.',
   ),
   AnimeTitle(
+    id:"8",
     title: 'Made in Abyss',
     slug: "made-in-abyss",
     genre: 'Adventure',
@@ -90,6 +98,11 @@ const mockTitles = [
         'Юная исследовательница Рико отправляется в загадочную Бездну '
         'в поисках своей пропавшей матери.',
   ),
+];
+
+const mockWatchlistTitleIds = <String>[
+  '1',
+  '3',
 ];
 
 const _frierenEpisodes = [

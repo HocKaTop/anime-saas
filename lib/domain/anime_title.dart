@@ -1,4 +1,5 @@
 class AnimeTitle {
+  final String id;
   final String slug;
   final String title;
   final String genre;
@@ -8,6 +9,7 @@ class AnimeTitle {
   final int episodes;
 
   const AnimeTitle({
+    required this.id,
     required this.slug,
     required this.title,
     required this.genre,

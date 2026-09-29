@@ -3,6 +3,7 @@ import 'package:animesaas/widgets/episode_card.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
+import '../models/watchlist_model.dart';
 import '../models/catalog_model.dart';
 import '../widgets/error_view.dart';
 import '../models/episode_model.dart';
@@ -57,6 +58,13 @@ class TitileDetailsScreen extends StatelessWidget {
 
     final scheme = Theme.of(context).colorScheme;
     final episodes = episodeModel.forTitle(slug);
+    final watchlist =
+    context.watch<WatchlistModel>();
+
+    final isSaved = watchlist.contains(
+      anime.id,
+    );
+
     return Scaffold(
       appBar: AppBar(title: Text(anime.title)),
       body: ListView(
@@ -99,8 +107,19 @@ class TitileDetailsScreen extends StatelessWidget {
               ),
               const SizedBox(width: 8),
               IconButton.filledTonal(
-                onPressed: () {},
-                icon: const Icon(Icons.bookmark_add_outlined),
+                onPressed: watchlist.isLoading
+                ? null
+                :()async {
+                  final error =
+                          await context.read<WatchlistModel>().toggle(anime.id);
+                  if(!context.mounted){
+                    return;
+                  }
+                  if(error != null){
+                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(error)));
+                  }
+                },
+                icon: Icon(isSaved ? Icons.bookmark : Icons.bookmark_add_outlined),
               ),
             ],
           ),
