@@ -51,7 +51,7 @@ class AuthApi {
       ).timeout(_timeout);
 
       //HTTP ошибка, если запрос дошел, но отклонен сервером
-      if(response.statusCode != 200 && response.statusCode==201){
+      if(response.statusCode != 200 && response.statusCode!=201){
         return Err<void>(
           apiMessage(response, authentication: true),
         );
@@ -85,6 +85,8 @@ class AuthApi {
       return const Err<void>("Ошибка соединения с сервером");
     } on TimeoutException{
       return const Err<void>("Сервер не отвечает. Повторите попытку позже");
+    }on FormatException{
+      return const Err<void>("Сервер вернул некорретный ответ");
     } on TypeError{
       return const Err<void>("Ответ сервера не соответствует ожидаемому формату");
     }

@@ -11,7 +11,12 @@ import 'repositories/mock_watchlist_repository.dart';
 import 'models/progress_model.dart';
 import 'repositories/mock_progress_repository.dart';
 
+import 'data/api_config.dart';
+import 'data/auth_api.dart';
+import 'data/token_store.dart';
 void main() {
+  final tokens = TokenStore();
+  final authApi = AuthApi(apiBaseUrl, tokens);
   final titleRepository = MockTitleRepository();
   final episodeRepository = MockEpisodeRepository();
   final watchlistRepository = MockWatchlistRepository();
@@ -20,6 +25,7 @@ void main() {
   runApp(
     MultiProvider(
       providers: [
+        Provider<AuthApi>.value(value: authApi),
         Provider<MockTitleRepository>.value(value: titleRepository),
         Provider<MockEpisodeRepository>.value(value: episodeRepository),
         Provider<MockWatchlistRepository>.value(value: watchlistRepository),

@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
+
+import '../data/auth_api.dart';
+import '../data/result.dart';
 import '../router_names.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -11,12 +15,46 @@ class LoginScreen extends StatefulWidget {
 
 class _LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
 
-  void _submit() {
-    if (_formKey.currentState!.validate()) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Данные введены корректно')));
+  bool _busy = false;
+
+  @override
+  void dispose() {
+    _emailController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _submit() async {
+    if (_busy || !_formKey.currentState!.validate()) {
+      return;
+    }
+
+    setState(() => _busy = true);
+
+    try {
+      final result = await context.read<AuthApi>().login(
+        _emailController.text,
+        _passwordController.text,
+      );
+
+      if (!mounted) return;
+
+      switch (result) {
+        case Ok():
+          context.goNamed(RouteNames.browse);
+
+        case Err(:final msg):
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(msg)),
+          );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _busy = false);
+      }
     }
   }
 
@@ -28,50 +66,52 @@ class _LoginScreenState extends State<LoginScreen> {
         padding: const EdgeInsets.all(24),
         children: [
           const SizedBox(height: 48),
-
           Icon(
             Icons.play_circle_fill,
             size: 80,
             color: Theme.of(context).colorScheme.primary,
           ),
-
           const SizedBox(height: 16),
-
           Text(
             'Creepy Oleg',
             textAlign: TextAlign.center,
             style: Theme.of(context).textTheme.headlineMedium,
           ),
-
           const SizedBox(height: 32),
-
           Form(
             key: _formKey,
             child: Column(
               children: [
                 TextFormField(
+                  controller: _emailController,
+                  enabled: !_busy,
                   keyboardType: TextInputType.emailAddress,
+                  textInputAction: TextInputAction.next,
                   decoration: const InputDecoration(
-                    labelText: "E-mail",
-                    hintText: "email@domain.com",
+                    labelText: 'E-mail',
+                    hintText: 'email@domain.com',
                     border: OutlineInputBorder(),
                     prefixIcon: Icon(Icons.email_outlined),
                   ),
                   validator: (value) {
                     if (value == null || value.trim().isEmpty) {
-                      return "Введите email";
+                      return 'Введите email';
                     }
-                    if (!value.contains('@')) {
-                      return "Введите корректный email";
+                    if (!value.trim().contains('@')) {
+                      return 'Введите корректный email';
                     }
                     return null;
                   },
                 ),
-
                 const SizedBox(height: 16),
-
                 TextFormField(
+                  controller: _passwordController,
+                  enabled: !_busy,
                   obscureText: true,
+                  autocorrect: false,
+                  enableSuggestions: false,
+                  textInputAction: TextInputAction.done,
+                  onFieldSubmitted: (_) => _submit(),
                   decoration: const InputDecoration(
                     labelText: 'Пароль',
                     border: OutlineInputBorder(),
@@ -79,28 +119,24 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                   validator: (value) {
                     if (value == null || value.isEmpty) {
-                      return "Введите пароль";
-                    }
-                    if (value.length < 6) {
-                      return "Длина пароля минимум 6 символов";
+                      return 'Введите пароль';
                     }
                     return null;
                   },
                 ),
-
                 const SizedBox(height: 24),
-
-                FilledButton(onPressed: _submit, child: const Text('Войти')),
+                FilledButton(
+                  onPressed: _busy ? null : _submit,
+                  child: Text(_busy ? 'Входим…' : 'Войти'),
+                ),
               ],
             ),
           ),
-
           const SizedBox(height: 8),
-
           TextButton(
-            onPressed: () {
-              context.pushNamed(RouteNames.register);
-            },
+            onPressed: _busy
+                ? null
+                : () => context.pushNamed(RouteNames.register),
             child: const Text('Нет аккаунта? Зарегистрироваться'),
           ),
         ],
