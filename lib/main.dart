@@ -14,9 +14,15 @@ import 'repositories/mock_progress_repository.dart';
 import 'data/api_config.dart';
 import 'data/auth_api.dart';
 import 'data/token_store.dart';
-void main() {
+Future <void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
   final tokens = TokenStore();
+  final savedToken = await tokens.read();
+
+  initRouter(loggedIn: savedToken != null && savedToken.trim().isNotEmpty);
   final authApi = AuthApi(apiBaseUrl, tokens);
+
+
   final titleRepository = MockTitleRepository();
   final episodeRepository = MockEpisodeRepository();
   final watchlistRepository = MockWatchlistRepository();

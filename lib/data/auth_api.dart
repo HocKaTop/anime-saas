@@ -34,6 +34,69 @@ class AuthApi {
       'password':password,
     });
   }
+Future<Result<void>> logout() async {
+  try {
+    final cookie = await tokens.readRefreshCookie();
+
+    if (cookie == null || cookie.isEmpty) {
+      return const Err<void>(
+        'Нет refresh cookie — серверный выход не подтверждён',
+      );
+    }
+
+    final response = await http
+        .post(
+          Uri.parse('$baseUrl/api/auth/logout'),
+          headers: {
+            'Accept': 'application/json',
+            'Cookie': cookie,
+          },
+        )
+        .timeout(_timeout);
+
+    if (response.statusCode != 200 &&
+        response.statusCode != 201) {
+      return Err<void>(apiMessage(response));
+    }
+
+    final json =
+        jsonDecode(utf8.decode(response.bodyBytes))
+            as Map<String, dynamic>;
+
+    final success = json['success'] as bool;
+
+    if (!success) {
+      return const Err<void>(
+        'Сервер не подтвердил выход',
+      );
+    }
+
+    return const Ok<void>(null);
+  } on SocketException {
+    return const Err<void>(
+      'Не удалось подключиться к серверу',
+    );
+  } on http.ClientException {
+    return const Err<void>(
+      'Ошибка соединения с сервером',
+    );
+  } on TimeoutException {
+    return const Err<void>(
+      'Сервер не отвечает',
+    );
+  } on FormatException {
+    return const Err<void>(
+      'Сервер вернул некорректный ответ',
+    );
+  } on TypeError {
+    return const Err<void>(
+      'Ответ сервера не соответствует ожидаемому формату',
+    );
+  } finally {
+    // Локальный выход выполняется даже при недоступном сервере.
+    await tokens.clear();
+  }
+}
 
   Future<Result<void>> _post(
     String path,

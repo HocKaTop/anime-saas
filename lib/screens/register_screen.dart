@@ -1,5 +1,9 @@
+import 'package:animesaas/data/auth_api.dart';
+import 'package:animesaas/data/result.dart';
+import 'package:animesaas/router_names.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -9,21 +13,46 @@ class RegisterScreen extends StatefulWidget {
 
 class _RegisterScreenState extends State<RegisterScreen> {
   final _formKey = GlobalKey<FormState>();
+  final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPassowrdController = TextEditingController();
 
+  bool _busy = false;
+
   @override
   void dispose() {
+    _emailController.dispose();
     _passwordController.dispose();
     _confirmPassowrdController.dispose();
     super.dispose();
   }
 
-  void _submit() {
-    if (_formKey.currentState!.validate()) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Регистрационные данные коректны")),
-      );
+  Future<void> _submit() async {
+    if (_busy){
+      return;
+    }
+    if(!_formKey.currentState!.validate()){
+      return;
+    }
+
+    setState(() => _busy = true);
+
+    try{
+      final result = await context.read<AuthApi>().register(_emailController.text, _passwordController.text);
+
+      if (!mounted) return;
+
+      switch(result){
+        case Ok():
+        //Register возвращает и сохраняет accessToken
+        context.goNamed(RouteNames.browse);
+        case Err(:final msg):
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
+      }
+    } finally {
+      if (mounted){
+        setState(() => _busy=false);
+      }
     }
   }
 
@@ -41,25 +70,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
               'Создать аккаунт',
               style: Theme.of(context).textTheme.headlineMedium,
             ),
-            const SizedBox(height: 24),
-            TextFormField(
-              decoration: InputDecoration(
-                labelText: "Имя пользователя",
-                border: OutlineInputBorder(),
-                prefixIcon: Icon(Icons.person_outlined),
-              ),
-              validator: (value) {
-                if (value == null || value.trim().isEmpty) {
-                  return "Введите Имя пользователя";
-                }
-                if (value.length < 3) {
-                  return "Имя пользователя должно быть больше 3 символов";
-                }
-                return null;
-              },
-            ),
             const SizedBox(height: 16),
             TextFormField(
+              controller: _emailController,
+              enabled: !_busy,
+              keyboardType: TextInputType.emailAddress,
+              textInputAction: TextInputAction.next,
               decoration: InputDecoration(
                 labelText: "Email",
                 border: OutlineInputBorder(),
@@ -78,6 +94,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
             const SizedBox(height: 16),
             TextFormField(
               controller: _passwordController,
+              enabled: !_busy,
+              autocorrect: false,
+              enableSuggestions: false,
+              textInputAction: TextInputAction.next,
               decoration: InputDecoration(
                 labelText: "Пароль",
                 border: OutlineInputBorder(),
@@ -88,7 +108,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 if (value == null || value.isEmpty) {
                   return "Введите пароль";
                 }
-                if (value.length < 6) {
+                if (value.length < 8 || value.length >128) {
                   return "Длина пароля минимум 6 символов";
                 }
                 return null;
@@ -97,6 +117,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
             const SizedBox(height: 16),
             TextFormField(
               controller: _confirmPassowrdController,
+              enabled: !_busy,
+              autocorrect: false,
+              enableSuggestions: false,
+              textInputAction: TextInputAction.next,
+              onFieldSubmitted: (_)=> _submit(),
               decoration: InputDecoration(
                 labelText: "Повторите пароль",
                 border: OutlineInputBorder(),
@@ -115,13 +140,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
             ),
             const SizedBox(height: 16),
             FilledButton(
-              onPressed: _submit,
-              child: const Text("Зарегестрироваться"),
+              onPressed: _busy? null: _submit,
+              child:  Text(_busy ? 'Создаем аккаунт...' : 'Зарегестрироваться',
+              ),
             ),
             TextButton(
-              onPressed: () {
-                context.pop();
-              },
+              onPressed: _busy ? null : () => context.goNamed(RouteNames.login),
               child: const Text("Уже есть аккаунт? Войти"),
             ),
           ],

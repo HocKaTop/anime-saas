@@ -14,8 +14,11 @@ import "router_names.dart";
 import 'screens/titile_details_screen.dart';
 import 'screens/watch_screen.dart';
 
-final GoRouter router = GoRouter(
-  initialLocation: '/browse',
+late final GoRouter router;
+
+void initRouter({required bool loggedIn}) {
+  router = GoRouter(
+    initialLocation: loggedIn ? '/browse' : '/login',
 
   errorBuilder: (context, state) {
     return Scaffold(
@@ -99,3 +102,4 @@ final GoRouter router = GoRouter(
     ),
   ],
 );
+}

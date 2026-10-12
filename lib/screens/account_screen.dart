@@ -7,6 +7,8 @@ import '../repositories/mock_progress_repository.dart';
 import '../repositories/mock_title_repository.dart';
 import '../repositories/mock_watchlist_repository.dart';
 import '../router_names.dart';
+import '../data/auth_api.dart';
+import '../data/result.dart';
 
 class AccountScreen extends StatefulWidget {
   const AccountScreen({super.key});
@@ -18,6 +20,7 @@ class AccountScreen extends StatefulWidget {
 class _AccountScreenState extends State<AccountScreen> {
   bool _simulateNetworkError = false;
   bool _initialized = false;
+  bool _loggingOut = false;
 
   @override
   void didChangeDependencies() {
@@ -38,6 +41,37 @@ class _AccountScreenState extends State<AccountScreen> {
       _simulateNetworkError = value;
     });
   }
+
+  Future<void> _logout() async {
+  if (_loggingOut) return;
+
+  final auth = context.read<AuthApi>();
+  final messenger = ScaffoldMessenger.of(context);
+
+  setState(() => _loggingOut = true);
+
+  try {
+    final result = await auth.logout();
+
+    if (!mounted) return;
+
+    context.goNamed(RouteNames.login);
+
+    if (result case Err(:final msg)) {
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(
+            'Вы вышли на этом устройстве. $msg',
+          ),
+        ),
+      );
+    }
+  } finally {
+    if (mounted) {
+      setState(() => _loggingOut = false);
+    }
+  }
+}
 
   @override
   Widget build(BuildContext context) {
@@ -60,23 +94,21 @@ class _AccountScreenState extends State<AccountScreen> {
           ),
           const SizedBox(height: 16),
           Text(
-            'Гость',
+            'Мой профиль',
             textAlign: TextAlign.center,
             style: Theme.of(context).textTheme.headlineSmall,
           ),
           const SizedBox(height: 4),
           Text(
-            'Войдите в аккаунт, что бы синхронизировать просмотр',
+            'Управление аккаунтов',
             textAlign: TextAlign.center,
             style: Theme.of(context).textTheme.bodyMedium,
           ),
           const SizedBox(height: 24),
           FilledButton.icon(
-            onPressed: () {
-              context.pushNamed(RouteNames.login);
-            },
+            onPressed: _loggingOut ? null : _logout,
             icon: const Icon(Icons.login),
-            label: const Text('Войти'),
+            label:  Text( _loggingOut ? 'Выходим...':'Выйти из аккаунта'),
           ),
           const SizedBox(height: 24),
           Card(
