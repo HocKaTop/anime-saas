@@ -20,15 +20,12 @@ class WatchScreen extends StatefulWidget {
 
 class _WatchScreenState extends State<WatchScreen> {
   double? _draftProgress;
+  bool _savingProgress = false;
 
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) {
-        context.read<ProgressModel>().loadEpisode(widget.episodeId);
-      }
-    });
+    _scheduleProgressLoad();
   }
 
   @override
@@ -36,7 +33,44 @@ class _WatchScreenState extends State<WatchScreen> {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.episodeId != widget.episodeId) {
       _draftProgress = null;
-      context.read<ProgressModel>().loadEpisode(widget.episodeId);
+      _savingProgress = false;
+      _scheduleProgressLoad();
+    }
+  }
+
+  void _scheduleProgressLoad() {
+    final episodeId = widget.episodeId;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted && widget.episodeId == episodeId) {
+        context.read<ProgressModel>().loadEpisode(episodeId);
+      }
+    });
+  }
+
+  Future<void> _saveProgress(double value) async {
+    if (_savingProgress) return;
+    final episodeId = widget.episodeId;
+    final progress = context.read<ProgressModel>();
+
+    setState(() {
+      _savingProgress = true;
+      _draftProgress = value;
+    });
+
+    try {
+      final error = await progress.saveProgress(episodeId, value);
+      if (!mounted || widget.episodeId != episodeId) return;
+      if (error != null) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(error)));
+      }
+    } finally {
+      if (mounted && widget.episodeId == episodeId) {
+        setState(() {
+          _savingProgress = false;
+          _draftProgress = null;
+        });
+      }
     }
   }
 
@@ -87,8 +121,14 @@ class _WatchScreenState extends State<WatchScreen> {
       return const Scaffold(body: Center(child: Text('Тайтл не найден')));
     }
 
-    final episodes = episodeModel.forTitle(episode.titleSlug)
-      ..sort((a, b) => a.number.compareTo(b.number));
+    if (!episode.canWatch) {
+      return Scaffold(
+        appBar: AppBar(title: Text(anime.title)),
+        body: const Center(child: Text('Видео этой серии пока недоступно')),
+      );
+    }
+
+    final episodes = episodeModel.forTitle(episode.titleSlug);
     final currentIndex = episodes.indexWhere(
       (item) => item.id == widget.episodeId,
     );
@@ -130,41 +170,21 @@ class _WatchScreenState extends State<WatchScreen> {
             min: 0,
             max: 1,
             divisions: 20,
-            onChanged: (value) {
-              setState(() => _draftProgress = value);
-            },
-            onChangeEnd: (value) async {
-              final error = await context.read<ProgressModel>().saveProgress(
-                widget.episodeId,
-                value,
-              );
-              if (!context.mounted) return;
-              setState(() => _draftProgress = null);
-              if (error != null) {
-                ScaffoldMessenger.of(context)
-                    .showSnackBar(SnackBar(content: Text(error)));
-              }
-            },
+            onChanged: _savingProgress
+                ? null
+                : (value) => setState(() => _draftProgress = value),
+            onChangeEnd: _savingProgress ? null : _saveProgress,
           ),
           Text('${(displayedProgress * 100).round()}% просмотрено'),
           const SizedBox(height: 8),
           OutlinedButton.icon(
-            onPressed: () async {
-              final error = await context.read<ProgressModel>().saveProgress(
-                widget.episodeId,
-                1.0,
-              );
-              if (!context.mounted) return;
-              if (error != null) {
-                ScaffoldMessenger.of(context)
-                    .showSnackBar(SnackBar(content: Text(error)));
-              }
-            },
+            onPressed: _savingProgress ? null : () => _saveProgress(1.0),
             icon: const Icon(Icons.check),
             label: const Text('Отметить просмотренным'),
           ),
           const SizedBox(height: 20),
           Text(
+            'Сезон ${episode.seasonNumber} · '
             '${episode.number} серия · ${episode.title}',
             style: Theme.of(context).textTheme.titleLarge,
           ),
@@ -180,7 +200,7 @@ class _WatchScreenState extends State<WatchScreen> {
             children: [
               Expanded(
                 child: OutlinedButton.icon(
-                  onPressed: previous == null
+                  onPressed: previous == null || !previous.canWatch
                       ? null
                       : () => context.pushReplacementNamed(
                           RouteNames.watch,
@@ -197,7 +217,7 @@ class _WatchScreenState extends State<WatchScreen> {
             children: [
               Expanded(
                 child: FilledButton.icon(
-                  onPressed: next == null
+                  onPressed: next == null || !next.canWatch
                       ? null
                       : () => context.pushReplacementNamed(
                           RouteNames.watch,

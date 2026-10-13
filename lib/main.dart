@@ -10,7 +10,8 @@ import 'models/watchlist_model.dart';
 import 'repositories/mock_watchlist_repository.dart';
 import 'models/progress_model.dart';
 import 'repositories/mock_progress_repository.dart';
-
+import 'repositories/http_episode_repository.dart';
+import 'repositories/episode_repository.dart';
 import 'data/api_config.dart';
 import 'data/auth_api.dart';
 import 'data/token_store.dart';
@@ -44,7 +45,7 @@ final authApi = AuthApi(
 profileModel = ProfileModel(authApi);
 
   final titleRepository = HttpTitleRepository(apiClient);
-  final episodeRepository = MockEpisodeRepository();
+  final episodeRepository = HttpEpisodeRepository(apiClient);
   final watchlistRepository = MockWatchlistRepository();
   final progressRepository = MockProgressRepository();
 
@@ -53,7 +54,7 @@ profileModel = ProfileModel(authApi);
       providers: [
         Provider<AuthApi>.value(value: authApi),
         Provider<TitleRepository>.value(value: titleRepository),
-        Provider<MockEpisodeRepository>.value(value: episodeRepository),
+        Provider<EpisodeRepository>.value(value: episodeRepository),
         Provider<MockWatchlistRepository>.value(value: watchlistRepository),
         Provider<ApiClient>.value(value: apiClient),
         Provider<MockProgressRepository>.value(value: progressRepository),
@@ -61,7 +62,7 @@ profileModel = ProfileModel(authApi);
           create: (_) => CatalogModel(titleRepository)..load(),
         ),
         ChangeNotifierProvider(
-          create: (_) => EpisodeModel(episodeRepository)..load(),
+          create: (_) => EpisodeModel(episodeRepository),
         ),
         ChangeNotifierProvider(
           create: (_) => WatchlistModel(watchlistRepository)..load(),

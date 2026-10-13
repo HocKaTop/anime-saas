@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:animesaas/widgets/episode_card.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
@@ -8,11 +7,41 @@ import '../models/catalog_model.dart';
 import '../widgets/error_view.dart';
 import '../models/episode_model.dart';
 import '../router_names.dart';
+import '../widgets/episode_card.dart';
 
-class TitileDetailsScreen extends StatelessWidget {
+class TitileDetailsScreen extends StatefulWidget {
   final String slug;
 
   const TitileDetailsScreen({super.key, required this.slug});
+
+  @override
+  State<TitileDetailsScreen> createState() => _TitileDetailsScreenState();
+}
+
+class _TitileDetailsScreenState extends State<TitileDetailsScreen> {
+  String get slug => widget.slug;
+
+  @override
+  void initState() {
+    super.initState();
+    _scheduleLoad();
+  }
+
+  @override
+  void didUpdateWidget(covariant TitileDetailsScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.slug != widget.slug) {
+      _scheduleLoad();
+    }
+  }
+
+  void _scheduleLoad() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        context.read<EpisodeModel>().load(titleSlug: widget.slug);
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -37,7 +66,7 @@ class TitileDetailsScreen extends StatelessWidget {
       return const Scaffold(body: Center(child: Text('Тайтл не найден')));
     }
 
-    if (episodeModel.isLoading) {
+    if (episodeModel.isLoading || episodeModel.titleSlug != slug) {
       return Scaffold(
         appBar: AppBar(title: Text(anime.title)),
         body: const Center(child: CircularProgressIndicator()),
@@ -50,7 +79,7 @@ class TitileDetailsScreen extends StatelessWidget {
         body: ErrorView(
           message: episodeModel.error!,
           onRetry: () {
-            context.read<EpisodeModel>().load();
+            context.read<EpisodeModel>().load(titleSlug: slug);
           },
         ),
       );
@@ -58,12 +87,12 @@ class TitileDetailsScreen extends StatelessWidget {
 
     final scheme = Theme.of(context).colorScheme;
     final episodes = episodeModel.forTitle(slug);
-    final watchlist =
-    context.watch<WatchlistModel>();
+    final playableEpisodes = episodes
+        .where((episode) => episode.canWatch)
+        .toList();
+    final watchlist = context.watch<WatchlistModel>();
 
-    final isSaved = watchlist.contains(
-      anime.id,
-    );
+    final isSaved = watchlist.contains(anime.id);
 
     return Scaffold(
       appBar: AppBar(title: Text(anime.title)),
@@ -72,15 +101,27 @@ class TitileDetailsScreen extends StatelessWidget {
         children: [
           Container(
             height: 320,
+            width: double.infinity,
+            clipBehavior: Clip.antiAlias,
             decoration: BoxDecoration(
               color: scheme.primaryContainer,
               borderRadius: BorderRadius.circular(16),
             ),
-            child: Icon(
-              Icons.movie_outlined,
-              size: 96,
-              color: scheme.onPrimaryContainer,
-            ),
+            child: anime.posterUrl == null
+                ? Icon(
+                    Icons.movie_outlined,
+                    size: 96,
+                    color: scheme.onPrimaryContainer,
+                  )
+                : Image.network(
+                    anime.posterUrl!,
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) => Icon(
+                      Icons.broken_image_outlined,
+                      size: 96,
+                      color: scheme.onPrimaryContainer,
+                    ),
+                  ),
           ),
           const SizedBox(height: 20),
           Text(anime.title, style: Theme.of(context).textTheme.headlineSmall),
@@ -89,9 +130,9 @@ class TitileDetailsScreen extends StatelessWidget {
             spacing: 16,
             runSpacing: 8,
             children: [
-            Text('MAL: ${anime.ratingLabel}'),
-            Text(anime.yearLabel),
-            Text(anime.genre),
+              Text('MAL: ${anime.ratingLabel}'),
+              Text(anime.yearLabel),
+              Text(anime.genre),
             ],
           ),
           const SizedBox(height: 16),
@@ -99,25 +140,37 @@ class TitileDetailsScreen extends StatelessWidget {
             children: [
               Expanded(
                 child: FilledButton.icon(
-                  onPressed: () {},
+                  onPressed: playableEpisodes.isEmpty
+                      ? null
+                      : () => context.pushNamed(
+                          RouteNames.watch,
+                          pathParameters: {
+                            'episodeId': playableEpisodes.first.id,
+                          },
+                        ),
+                  icon: const Icon(Icons.play_arrow),
                   label: const Text("Смотреть"),
                 ),
               ),
               const SizedBox(width: 8),
               IconButton.filledTonal(
                 onPressed: watchlist.isLoading
-                ? null
-                :()async {
-                  final error =
-                          await context.read<WatchlistModel>().toggle(anime.id);
-                  if(!context.mounted){
-                    return;
-                  }
-                  if(error != null){
-                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(error)));
-                  }
-                },
-                icon: Icon(isSaved ? Icons.bookmark : Icons.bookmark_add_outlined),
+                    ? null
+                    : () async {
+                        final error = await context
+                            .read<WatchlistModel>()
+                            .toggle(anime.id);
+                        if (!context.mounted) {
+                          return;
+                        }
+                        if (error != null) {
+                          ScaffoldMessenger.of(context)
+                              .showSnackBar(SnackBar(content: Text(error)));
+                        }
+                      },
+                icon: Icon(
+                  isSaved ? Icons.bookmark : Icons.bookmark_add_outlined,
+                ),
               ),
             ],
           ),
@@ -128,17 +181,20 @@ class TitileDetailsScreen extends StatelessWidget {
           const SizedBox(height: 24),
           Text("Эпизоды", style: Theme.of(context).textTheme.titleLarge),
           const SizedBox(height: 8),
+          if (episodes.isEmpty) const Text('Опубликованных серий пока нет'),
           ...episodes.map(
             (episode) => EpisodeCard(
               number: episode.number,
-              title: episode.title,
-              duration: episode.duration,
-              onTap: () {
-                context.pushNamed(
-                  RouteNames.watch,
-                  pathParameters: {'episodeId': episode.id},
-                );
-              },
+              title: 'Сезон ${episode.seasonNumber} · ${episode.title}',
+              duration: episode.canWatch
+                  ? episode.duration
+                  : '${episode.duration} · Видео пока недоступно',
+              onTap: episode.canWatch
+                  ? () => context.pushNamed(
+                      RouteNames.watch,
+                      pathParameters: {'episodeId': episode.id},
+                    )
+                  : null,
             ),
           ),
         ],

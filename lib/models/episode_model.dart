@@ -5,26 +5,25 @@ import '../domain/episode.dart';
 import '../repositories/episode_repository.dart';
 
 class EpisodeModel extends ChangeNotifier {
-  final EpisodeRepository _repository;
-
   EpisodeModel(this._repository);
+
+  final EpisodeRepository _repository;
 
   bool _isLoading = false;
   String? _error;
+  String? _titleSlug;
   List<Episode> _episodes = const [];
+  int _revision = 0;
 
   bool get isLoading => _isLoading;
-
   String? get error => _error;
+  String? get titleSlug => _titleSlug;
 
-  List<Episode> get episodes =>
-      List.unmodifiable(_episodes);
+  List<Episode> get episodes => List.unmodifiable(_episodes);
 
   Episode? byId(String id) {
     for (final episode in _episodes) {
-      if (episode.id == id) {
-        return episode;
-      }
+      if (episode.id == id) return episode;
     }
 
     return null;
@@ -32,19 +31,33 @@ class EpisodeModel extends ChangeNotifier {
 
   List<Episode> forTitle(String slug) {
     return _episodes
-        .where(
-          (episode) => episode.titleSlug == slug,
-        )
+        .where((episode) => episode.titleSlug == slug)
         .toList();
   }
 
-  Future<void> load() async {
+  Future<void> load({String? titleSlug}) async {
+    final slug = titleSlug ?? _titleSlug;
+
+    if (slug == null || slug.isEmpty) {
+      _error = 'Выберите тайтл для загрузки серий';
+      notifyListeners();
+      return;
+    }
+
+    final revision = ++_revision;
+
+    _titleSlug = slug;
     _isLoading = true;
     _error = null;
-
+    _episodes = const [];
     notifyListeners();
 
-    switch (await _repository.fetchAll()) {
+    final result = await _repository.fetchByTitle(slug);
+
+    // Ответ предыдущего тайтла не заменяет новый.
+    if (revision != _revision) return;
+
+    switch (result) {
       case Ok(:final value):
         _episodes = value;
 
@@ -53,7 +66,6 @@ class EpisodeModel extends ChangeNotifier {
     }
 
     _isLoading = false;
-
     notifyListeners();
   }
 }
