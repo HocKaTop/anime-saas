@@ -8,9 +8,12 @@ import 'api_message.dart';
 import 'result.dart';
 import 'token_store.dart';
 
-class AuthApi {
-  AuthApi(this.baseUrl, this.tokens);
+import '../domain/auth_user.dart';
+import 'api_client.dart';
 
+class AuthApi {
+  AuthApi(this.baseUrl, this.tokens,{ required this.client});
+  final ApiClient client;
   final String baseUrl;
   final TokenStore tokens;
   static const _timeout = Duration(seconds: 8);
@@ -24,6 +27,18 @@ class AuthApi {
       'password':password,
     });
   }
+
+  Future<Result<AuthUser>> me() {
+  return client.get<AuthUser>(
+    '/api/auth/me',
+    decode: (json) {
+      final response = json as Map<String, dynamic>;
+      final user = response['user'] as Map<String, dynamic>;
+
+      return AuthUser.fromJson(user);
+    },
+  );
+}
 
   Future<Result<void>> register(
     String email,

@@ -1,11 +1,8 @@
+import 'package:animesaas/widgets/error_view.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
-
-import '../repositories/mock_episode_repository.dart';
-import '../repositories/mock_progress_repository.dart';
-import '../repositories/mock_title_repository.dart';
-import '../repositories/mock_watchlist_repository.dart';
+import '../models/profile_model.dart';
 import '../router_names.dart';
 import '../data/auth_api.dart';
 import '../data/result.dart';
@@ -18,27 +15,16 @@ class AccountScreen extends StatefulWidget {
 }
 
 class _AccountScreenState extends State<AccountScreen> {
-  bool _simulateNetworkError = false;
-  bool _initialized = false;
   bool _loggingOut = false;
 
   @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    if (!_initialized) {
-      _simulateNetworkError = context.read<MockTitleRepository>().simulateError;
-      _initialized = true;
-    }
-  }
+  void initState(){
+    super.initState();
 
-  void _setNetworkError(bool value) {
-    context.read<MockTitleRepository>().simulateError = value;
-    context.read<MockEpisodeRepository>().simulateError = value;
-    context.read<MockWatchlistRepository>().simulateError = value;
-    context.read<MockProgressRepository>().simulateError = value;
-
-    setState(() {
-      _simulateNetworkError = value;
+    WidgetsBinding.instance.addPostFrameCallback((_){
+      if (mounted){
+        context.read<ProfileModel>().load();
+      }
     });
   }
 
@@ -46,9 +32,11 @@ class _AccountScreenState extends State<AccountScreen> {
   if (_loggingOut) return;
 
   final auth = context.read<AuthApi>();
+  final profile = context.read<ProfileModel>();
   final messenger = ScaffoldMessenger.of(context);
 
   setState(() => _loggingOut = true);
+  profile.clear();  
 
   try {
     final result = await auth.logout();
@@ -75,80 +63,56 @@ class _AccountScreenState extends State<AccountScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    return Scaffold(
-      appBar: AppBar(title: const Text("Профиль")),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          Center(
-            child: CircleAvatar(
-              radius: 40,
-              backgroundColor: scheme.primaryContainer,
-              child: Icon(
-                Icons.person,
-                size: 48,
-                color: scheme.onPrimaryContainer,
-              ),
-            ),
-          ),
+    final profile = context.watch<ProfileModel>();
+    final user = profile.user;
+    final error = profile.error;
+
+  Widget body;
+  if(profile.isLoading || _loggingOut){
+    body = const Center(
+      child: CircularProgressIndicator(),
+    );
+  } else if (error !=null) {
+    body= ErrorView(message: error, onRetry:()=> profile.load());
+  } else if(user == null ){
+    body = const Center(
+      child: CircularProgressIndicator(),
+    );
+  } else{
+    body = RefreshIndicator(onRefresh: profile.load, child: ListView(
+      physics: const AlwaysScrollableScrollPhysics(),
+      padding: const EdgeInsets.all(24),
+      children: [
+        const Center(
+          child: CircleAvatar(
+            radius: 24,
+            child: Icon(Icons.person_outline, size: 48,),
+          ),),
           const SizedBox(height: 16),
           Text(
-            'Мой профиль',
+            user.nickname ?? 'Мой профиль',
             textAlign: TextAlign.center,
             style: Theme.of(context).textTheme.headlineSmall,
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height:8),
           Text(
-            'Управление аккаунтов',
+            user.email,
             textAlign: TextAlign.center,
-            style: Theme.of(context).textTheme.bodyMedium,
+            style: Theme.of(context).textTheme.headlineMedium,
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height:32),
           FilledButton.icon(
-            onPressed: _loggingOut ? null : _logout,
-            icon: const Icon(Icons.login),
-            label:  Text( _loggingOut ? 'Выходим...':'Выйти из аккаунта'),
-          ),
-          const SizedBox(height: 24),
-          Card(
-            child: Column(
-              children: [
-                ListTile(
-                  leading: const Icon(Icons.history),
-                  title: const Text("История просмтра"),
-                  trailing: const Icon(Icons.chevron_right),
-                  onTap: () {},
-                ),
-                const Divider(height: 1),
-                ListTile(
-                  leading: const Icon(Icons.settings),
-                  title: const Text("Настройки"),
-                  trailing: const Icon(Icons.chevron_right),
-                  onTap: () {},
-                ),
-                const Divider(height: 1),
-                SwitchListTile(
-                  secondary: const Icon(Icons.cloud_off_outlined),
-                  title: const Text('Симулировать сбой сети'),
-                  subtitle: const Text(
-                    'Тестовый режим для демонстрации ошибок',
-                  ),
-                  value: _simulateNetworkError,
-                  onChanged: _setNetworkError,
-                ),
-                const Divider(height: 1),
-                ListTile(
-                  leading: const Icon(Icons.info_outline),
-                  title: const Text("О приложении"),
-                  trailing: const Icon(Icons.chevron_right),
-                  onTap: () {},
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
+            onPressed: _logout,
+            icon : const Icon(Icons.logout),
+            label: const Text('Выйти из аккаунта')
+          )
+      ],
+    ));
+  }
+
+    return Scaffold(
+      appBar: AppBar(title: const Text("Профиль")),
+      body: body,
     );
   }
 }
