@@ -31,11 +31,25 @@ class TitleCard extends StatelessWidget {
               height:120,
               width: double.infinity,
               color: scheme.primaryContainer,
-              child:Icon(
-                Icons.movie_outlined,
-                size:64,
-                color: scheme.onPrimaryContainer,
-              ),
+              child: anime.posterUrl == null
+                  ? Icon(
+                    Icons.movie_outlined,
+                    size: 64,
+                    color: scheme.onPrimaryContainer,
+                  )
+                  : Image.network(
+                    anime.posterUrl!,
+                    width: double.infinity,
+                    height: 120,
+                    fit: BoxFit.cover,
+                    errorBuilder: (context,error,stackTrace){
+                      return Icon(
+                        Icons.broken_image_outlined,
+                        size:48,
+                        color:scheme.onPrimaryContainer,
+                      );
+                    },
+                  )
             ),
 
             Padding(
@@ -53,7 +67,7 @@ class TitleCard extends StatelessWidget {
                   const SizedBox(height: 6),
 
                   Text(
-                    '${anime.year} · ${anime.genre}',
+                    '${anime.yearLabel} · ${anime.genre}',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: Theme.of(context).textTheme.bodySmall,
@@ -69,19 +83,19 @@ class TitleCard extends StatelessWidget {
                       ),
                       const  SizedBox(width:4),
                       Text(
-                        anime.rating.toString(),
+                        'MAL :${anime.ratingLabel}',
                         style: Theme.of(context).textTheme.bodySmall,
                       )
                     ]
                   )
 
-                ], // children внутреннего Column
-              ), // внутренний Column
-            ), // Padding
-          ], // children внешнего Column
-        ), // внешний Column
-      ), // Card
+                ],
+              ),
+            ),
+          ],
+        ), 
       ),
-    ); // SizedBox
-  } // build
-} // TitleCard
+      ),
+    );
+  } 
+} 

@@ -85,15 +85,13 @@ class TitileDetailsScreen extends StatelessWidget {
           const SizedBox(height: 20),
           Text(anime.title, style: Theme.of(context).textTheme.headlineSmall),
           const SizedBox(height: 8),
-          Row(
+          Wrap(
+            spacing: 16,
+            runSpacing: 8,
             children: [
-              const Icon(Icons.star, size: 20),
-              const SizedBox(width: 4),
-              Text('${anime.rating}'),
-              const SizedBox(width: 16),
-              Text('${anime.year}'),
-              const SizedBox(width: 16),
-              Text(anime.genre),
+            Text('MAL: ${anime.ratingLabel}'),
+            Text(anime.yearLabel),
+            Text(anime.genre),
             ],
           ),
           const SizedBox(height: 16),

@@ -43,8 +43,10 @@ class _SearchScreenState extends State<SearchScreen> {
       final query = _query.trim().toLowerCase();
       final filteredTitles = catalog.titles.where((anime) {
         final matchesQuery = anime.title.toLowerCase().contains(query);
-        final matchesGenre =
-            _selectedGenre == 'Все' || anime.genre == _selectedGenre;
+        final matchesGenre = _selectedGenre == 'Все' ||
+        (anime.genres.isEmpty
+        ? anime.genre == _selectedGenre
+        : anime.genres.contains(_selectedGenre));
         return matchesQuery && matchesGenre;
       }).toList();
 

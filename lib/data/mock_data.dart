@@ -170,7 +170,7 @@ const _frierenEpisodes = [
 
 final List<Episode> mockEpisodes = List<Episode>.unmodifiable([
   for (final anime in mockTitles)
-    for (var number = 1; number <= anime.episodes; number++)
+    for (var number = 1; number <= (anime.episodes ?? 0); number++)
       if (anime.slug == 'frieren-beyond-journey' &&
           number <= _frierenEpisodes.length)
         _frierenEpisodes[number - 1]

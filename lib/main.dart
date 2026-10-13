@@ -1,9 +1,9 @@
 import 'package:animesaas/models/catalog_model.dart';
-import 'package:animesaas/repositories/mock_title_repository.dart';
 import 'package:animesaas/router.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-
+import 'repositories/http_title_repository.dart';
+import 'repositories/title_repository.dart';
 import 'models/episode_model.dart';
 import 'repositories/mock_episode_repository.dart';
 import 'models/watchlist_model.dart';
@@ -43,7 +43,7 @@ final authApi = AuthApi(
 
 profileModel = ProfileModel(authApi);
 
-  final titleRepository = MockTitleRepository();
+  final titleRepository = HttpTitleRepository(apiClient);
   final episodeRepository = MockEpisodeRepository();
   final watchlistRepository = MockWatchlistRepository();
   final progressRepository = MockProgressRepository();
@@ -52,7 +52,7 @@ profileModel = ProfileModel(authApi);
     MultiProvider(
       providers: [
         Provider<AuthApi>.value(value: authApi),
-        Provider<MockTitleRepository>.value(value: titleRepository),
+        Provider<TitleRepository>.value(value: titleRepository),
         Provider<MockEpisodeRepository>.value(value: episodeRepository),
         Provider<MockWatchlistRepository>.value(value: watchlistRepository),
         Provider<ApiClient>.value(value: apiClient),
