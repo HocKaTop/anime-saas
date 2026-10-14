@@ -4,34 +4,37 @@ import '../data/result.dart';
 import '../repositories/watchlist_repository.dart';
 
 class WatchlistModel extends ChangeNotifier {
-  final WatchlistRepository _repository;
-
   WatchlistModel(this._repository);
+
+  final WatchlistRepository _repository;
 
   bool _isLoading = false;
   String? _error;
   Set<String> _titleIds = {};
+  int _revision = 0;
 
   bool get isLoading => _isLoading;
-
   String? get error => _error;
-
-  Set<String> get titleIds =>
-      Set.unmodifiable(_titleIds);
-
+  Set<String> get titleIds => Set.unmodifiable(_titleIds);
   int get count => _titleIds.length;
 
-  bool contains(String titleId) {
-    return _titleIds.contains(titleId);
-  }
+  bool contains(String titleId) => _titleIds.contains(titleId);
 
   Future<void> load() async {
+    if (_isLoading) return;
+
+    final revision = ++_revision;
+
     _isLoading = true;
     _error = null;
-
+    _titleIds = {};
     notifyListeners();
 
-    switch (await _repository.fetchAll()) {
+    final result = await _repository.fetchAll();
+
+    if (revision != _revision) return;
+
+    switch (result) {
       case Ok(:final value):
         _titleIds = value.toSet();
 
@@ -40,52 +43,70 @@ class WatchlistModel extends ChangeNotifier {
     }
 
     _isLoading = false;
-
     notifyListeners();
   }
 
-  Future<String?> add(String titleId) async {
-    switch (await _repository.add(titleId)) {
-      case Ok():
-        _titleIds = {
-          ..._titleIds,
-          titleId,
-        };
+  Future<String?> add(String titleId) {
+    return _change(titleId, adding: true);
+  }
 
+  Future<String?> remove(String titleId) {
+    return _change(titleId, adding: false);
+  }
+
+  Future<String?> toggle(String titleId) {
+    return contains(titleId) ? remove(titleId) : add(titleId);
+  }
+
+  Future<String?> _change(
+    String titleId, {
+    required bool adding,
+  }) async {
+    if (_isLoading) {
+      return 'Дождитесь завершения предыдущего запроса';
+    }
+
+    final revision = ++_revision;
+
+    _isLoading = true;
+    _error = null;
+    notifyListeners();
+
+    try {
+      final result = adding
+          ? await _repository.add(titleId)
+          : await _repository.remove(titleId);
+
+      if (revision != _revision) {
+        return 'Сессия изменилась — повторите действие';
+      }
+
+      switch (result) {
+        case Ok():
+          if (adding) {
+            _titleIds.add(titleId);
+          } else {
+            _titleIds.remove(titleId);
+          }
+          return null;
+
+        case Err(:final msg):
+          _error = msg;
+          return msg;
+      }
+    } finally {
+      if (revision == _revision) {
+        _isLoading = false;
         notifyListeners();
-
-        return null;
-
-      case Err(:final msg):
-        return msg;
+      }
     }
   }
 
-  Future<String?> remove(
-    String titleId,
-  ) async {
-    switch (await _repository.remove(titleId)) {
-      case Ok():
-        _titleIds = {
-          ..._titleIds,
-        }..remove(titleId);
-
-        notifyListeners();
-
-        return null;
-
-      case Err(:final msg):
-        return msg;
-    }
-  }
-
-  Future<String?> toggle(
-    String titleId,
-  ) {
-    if (contains(titleId)) {
-      return remove(titleId);
-    }
-
-    return add(titleId);
+  void clear() {
+    _revision++;
+    _titleIds = {};
+    _error = null;
+    _isLoading = false;
+    notifyListeners();
   }
 }

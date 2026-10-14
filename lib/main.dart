@@ -1,13 +1,15 @@
+import 'dart:async';
+
 import 'package:animesaas/models/catalog_model.dart';
+import 'package:animesaas/repositories/http_watchlist_repository.dart';
+import 'package:animesaas/repositories/watchlist_repository.dart';
 import 'package:animesaas/router.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'repositories/http_title_repository.dart';
 import 'repositories/title_repository.dart';
 import 'models/episode_model.dart';
-import 'repositories/mock_episode_repository.dart';
 import 'models/watchlist_model.dart';
-import 'repositories/mock_watchlist_repository.dart';
 import 'models/progress_model.dart';
 import 'repositories/mock_progress_repository.dart';
 import 'repositories/http_episode_repository.dart';
@@ -23,30 +25,44 @@ Future <void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   final tokens = TokenStore();
   final savedToken = await tokens.read();
-
-  initRouter(loggedIn: savedToken != null && savedToken.trim().isNotEmpty);
+  final loggedIn =
+                savedToken != null && savedToken.trim().isNotEmpty;
+  initRouter(loggedIn: loggedIn);
 late final ProfileModel profileModel;
+late final WatchlistModel watchlistModel;
 
 final apiClient = ApiClient(
   apiBaseUrl,
   tokens,
   onUnauthorized: () {
     profileModel.clear();
+    watchlistModel.clear();
     router.goNamed(RouteNames.login);
   },
 );
+
+final watchlistRepository = HttpWatchlistRepository(apiClient);
+watchlistModel = WatchlistModel(watchlistRepository);
 
 final authApi = AuthApi(
   apiBaseUrl,
   tokens,
   client: apiClient,
+  onSignedIn:(){
+    profileModel.clear();
+    watchlistModel.clear();
+    unawaited(watchlistModel.load());
+  },
+  onSignedOut: (){
+    profileModel.clear();
+    watchlistModel.clear();
+  },
 );
 
 profileModel = ProfileModel(authApi);
 
   final titleRepository = HttpTitleRepository(apiClient);
   final episodeRepository = HttpEpisodeRepository(apiClient);
-  final watchlistRepository = MockWatchlistRepository();
   final progressRepository = MockProgressRepository();
 
   runApp(
@@ -55,7 +71,7 @@ profileModel = ProfileModel(authApi);
         Provider<AuthApi>.value(value: authApi),
         Provider<TitleRepository>.value(value: titleRepository),
         Provider<EpisodeRepository>.value(value: episodeRepository),
-        Provider<MockWatchlistRepository>.value(value: watchlistRepository),
+        Provider<WatchlistRepository>.value(value: watchlistRepository),
         Provider<ApiClient>.value(value: apiClient),
         Provider<MockProgressRepository>.value(value: progressRepository),
         ChangeNotifierProvider(
@@ -64,8 +80,8 @@ profileModel = ProfileModel(authApi);
         ChangeNotifierProvider(
           create: (_) => EpisodeModel(episodeRepository),
         ),
-        ChangeNotifierProvider(
-          create: (_) => WatchlistModel(watchlistRepository)..load(),
+        ChangeNotifierProvider<WatchlistModel>.value(
+          value: watchlistModel,
         ),
         ChangeNotifierProvider(
           create: (_) => ProgressModel(progressRepository),
@@ -77,6 +93,10 @@ profileModel = ProfileModel(authApi);
       child: const MyApp(),
     ),
   );
+
+  if (loggedIn){
+    unawaited(watchlistModel.load());
+  }
 }
 
 class MyApp extends StatelessWidget {

@@ -12,7 +12,15 @@ import '../domain/auth_user.dart';
 import 'api_client.dart';
 
 class AuthApi {
-  AuthApi(this.baseUrl, this.tokens,{ required this.client});
+  AuthApi(
+  this.baseUrl,
+  this.tokens, {
+  required this.client,
+  this.onSignedIn,
+  this.onSignedOut,
+  });
+  final void Function()? onSignedIn;
+  final void Function()? onSignedOut;
   final ApiClient client;
   final String baseUrl;
   final TokenStore tokens;
@@ -110,6 +118,7 @@ Future<Result<void>> logout() async {
   } finally {
     // Локальный выход выполняется даже при недоступном сервере.
     await tokens.clear();
+    onSignedOut?.call();
   }
 }
 
@@ -155,7 +164,7 @@ Future<Result<void>> logout() async {
         token,
         refreshCookie: refreshCookie,
       );
-
+      onSignedIn?.call();
       return const Ok<void>(null);
     } on SocketException{
       return const Err<void>("Не удалось подключиться к серверу");
