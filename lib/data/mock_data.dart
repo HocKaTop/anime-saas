@@ -106,16 +106,7 @@ const mockWatchlistTitleIds = <String>[
   '3',
 ];
 
-const mockProgress = [
-  WatchProgress(
-    episodeId: 'frieren-1',
-    progress: 0.35,
-  ),
-  WatchProgress(
-    episodeId: 'frieren-2',
-    progress: 1.0,
-  ),
-];
+const mockProgress = <WatchProgress>[];
 
 const _frierenEpisodes = [
   Episode(

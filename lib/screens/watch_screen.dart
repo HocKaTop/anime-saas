@@ -51,6 +51,18 @@ class _WatchScreenState extends State<WatchScreen> {
     if (_savingProgress) return;
     final episodeId = widget.episodeId;
     final progress = context.read<ProgressModel>();
+    final episode = context.read<EpisodeModel>().byId(episodeId);
+
+    final metaDataDuration = episode?.durationSec;
+    final durationSec =
+        metaDataDuration != null && metaDataDuration>0
+          ? metaDataDuration
+          :progress.byEpisode(episodeId)?.durationSec;
+    
+    if (durationSec == null || durationSec <=0){
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Длительность серии не известна')));
+      return;
+    }
 
     setState(() {
       _savingProgress = true;
@@ -58,7 +70,7 @@ class _WatchScreenState extends State<WatchScreen> {
     });
 
     try {
-      final error = await progress.saveProgress(episodeId, value);
+      final error = await progress.saveProgress(episodeId, value, durationSec: durationSec);
       if (!mounted || widget.episodeId != episodeId) return;
       if (error != null) {
         ScaffoldMessenger.of(context)
@@ -137,9 +149,13 @@ class _WatchScreenState extends State<WatchScreen> {
         ? episodes[currentIndex + 1]
         : null;
 
-    final savedProgress =
-        progressModel.byEpisode(widget.episodeId)?.progress ?? 0.0;
+    final saved =progressModel.byEpisode(widget.episodeId);
+    final metaDataDuration = episode.durationSec;
+    final durationSec= metaDataDuration != null && metaDataDuration>0? metaDataDuration : saved?.durationSec;
+    final canSave = durationSec != null && durationSec>0;
+    final savedProgress = saved == null ? 0.0 : durationSec !=null && durationSec>0 ?(saved.positionSec/durationSec).clamp(0.0, 1.0).toDouble() : saved.progress;
     final displayedProgress = _draftProgress ?? savedProgress;
+
     final scheme = Theme.of(context).colorScheme;
 
     return Scaffold(
@@ -170,15 +186,15 @@ class _WatchScreenState extends State<WatchScreen> {
             min: 0,
             max: 1,
             divisions: 20,
-            onChanged: _savingProgress
+            onChanged: _savingProgress || !canSave
                 ? null
                 : (value) => setState(() => _draftProgress = value),
-            onChangeEnd: _savingProgress ? null : _saveProgress,
+            onChangeEnd: _savingProgress || !canSave ? null : _saveProgress,
           ),
-          Text('${(displayedProgress * 100).round()}% просмотрено'),
+          Text(canSave ? '${(displayedProgress * 100).round()}% просмотрено' : 'Длительность пока неизвестна'),
           const SizedBox(height: 8),
           OutlinedButton.icon(
-            onPressed: _savingProgress ? null : () => _saveProgress(1.0),
+            onPressed: _savingProgress || !canSave ? null :()=> _saveProgress(1.0),
             icon: const Icon(Icons.check),
             label: const Text('Отметить просмотренным'),
           ),
