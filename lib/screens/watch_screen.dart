@@ -1,268 +1,132 @@
 import 'package:flutter/material.dart';
-
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import '../models/catalog_model.dart';
 import '../models/episode_model.dart';
-import '../models/progress_model.dart';
 import '../router_names.dart';
 import '../widgets/error_view.dart';
+import '../widgets/hls_player.dart';
 
-class WatchScreen extends StatefulWidget {
+class WatchScreen extends StatelessWidget {
+  const WatchScreen({
+    super.key,
+    required this.episodeId,
+  });
+
   final String episodeId;
-
-  const WatchScreen({super.key, required this.episodeId});
-
-  @override
-  State<WatchScreen> createState() => _WatchScreenState();
-}
-
-class _WatchScreenState extends State<WatchScreen> {
-  double? _draftProgress;
-  bool _savingProgress = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _scheduleProgressLoad();
-  }
-
-  @override
-  void didUpdateWidget(covariant WatchScreen oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.episodeId != widget.episodeId) {
-      _draftProgress = null;
-      _savingProgress = false;
-      _scheduleProgressLoad();
-    }
-  }
-
-  void _scheduleProgressLoad() {
-    final episodeId = widget.episodeId;
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted && widget.episodeId == episodeId) {
-        context.read<ProgressModel>().loadEpisode(episodeId);
-      }
-    });
-  }
-
-  Future<void> _saveProgress(double value) async {
-    if (_savingProgress) return;
-    final episodeId = widget.episodeId;
-    final progress = context.read<ProgressModel>();
-    final episode = context.read<EpisodeModel>().byId(episodeId);
-
-    final metaDataDuration = episode?.durationSec;
-    final durationSec =
-        metaDataDuration != null && metaDataDuration>0
-          ? metaDataDuration
-          :progress.byEpisode(episodeId)?.durationSec;
-    
-    if (durationSec == null || durationSec <=0){
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Длительность серии не известна')));
-      return;
-    }
-
-    setState(() {
-      _savingProgress = true;
-      _draftProgress = value;
-    });
-
-    try {
-      final error = await progress.saveProgress(episodeId, value, durationSec: durationSec);
-      if (!mounted || widget.episodeId != episodeId) return;
-      if (error != null) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text(error)));
-      }
-    } finally {
-      if (mounted && widget.episodeId == episodeId) {
-        setState(() {
-          _savingProgress = false;
-          _draftProgress = null;
-        });
-      }
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
     final episodeModel = context.watch<EpisodeModel>();
     final catalog = context.watch<CatalogModel>();
-    final progressModel = context.watch<ProgressModel>();
 
     if (episodeModel.isLoading || catalog.isLoading) {
-      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
     }
 
     final error = episodeModel.error ?? catalog.error;
+
     if (error != null) {
       return Scaffold(
+        appBar: AppBar(),
         body: ErrorView(
           message: error,
           onRetry: () {
-            if (episodeModel.error != null) context.read<EpisodeModel>().load();
-            if (catalog.error != null) context.read<CatalogModel>().load();
+            if (episodeModel.error != null) {
+              context.read<EpisodeModel>().load();
+            }
+
+            if (catalog.error != null) {
+              context.read<CatalogModel>().load();
+            }
           },
         ),
       );
     }
 
-    if (progressModel.isLoading) {
-      return const Scaffold(body: Center(child: CircularProgressIndicator()));
-    }
+    final episode = episodeModel.byId(episodeId);
 
-    if (progressModel.error != null) {
+    if (episode == null) {
       return Scaffold(
-        body: ErrorView(
-          message: progressModel.error!,
-          onRetry: () =>
-              context.read<ProgressModel>().loadEpisode(widget.episodeId),
-        ),
+        appBar: AppBar(),
+        body: const Center(child: Text('Эпизод не найден')),
       );
     }
 
-    final episode = episodeModel.byId(widget.episodeId);
-    if (episode == null) {
-      return const Scaffold(body: Center(child: Text('Эпизод не найден')));
-    }
-
     final anime = catalog.bySlug(episode.titleSlug);
+
     if (anime == null) {
-      return const Scaffold(body: Center(child: Text('Тайтл не найден')));
+      return Scaffold(
+        appBar: AppBar(),
+        body: const Center(child: Text('Тайтл не найден')),
+      );
     }
 
     if (!episode.canWatch) {
       return Scaffold(
         appBar: AppBar(title: Text(anime.title)),
-        body: const Center(child: Text('Видео этой серии пока недоступно')),
+        body: const Center(
+          child: Text('Видео этой серии пока недоступно'),
+        ),
       );
     }
 
     final episodes = episodeModel.forTitle(episode.titleSlug);
-    final currentIndex = episodes.indexWhere(
-      (item) => item.id == widget.episodeId,
+    final index = episodes.indexWhere(
+      (item) => item.id == episodeId,
     );
-    final previous = currentIndex > 0 ? episodes[currentIndex - 1] : null;
-    final next = currentIndex >= 0 && currentIndex < episodes.length - 1
-        ? episodes[currentIndex + 1]
+
+    final previous = index > 0 ? episodes[index - 1] : null;
+    final next = index >= 0 && index < episodes.length - 1
+        ? episodes[index + 1]
         : null;
-
-    final saved =progressModel.byEpisode(widget.episodeId);
-    final metaDataDuration = episode.durationSec;
-    final durationSec= metaDataDuration != null && metaDataDuration>0? metaDataDuration : saved?.durationSec;
-    final canSave = durationSec != null && durationSec>0;
-    final savedProgress = saved == null ? 0.0 : durationSec !=null && durationSec>0 ?(saved.positionSec/durationSec).clamp(0.0, 1.0).toDouble() : saved.progress;
-    final displayedProgress = _draftProgress ?? savedProgress;
-
-    final scheme = Theme.of(context).colorScheme;
 
     return Scaffold(
       appBar: AppBar(title: Text(anime.title)),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          AspectRatio(
-            aspectRatio: 16 / 9,
-            child: Container(
-              decoration: BoxDecoration(
-                color: scheme.surfaceContainerHigh,
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: Center(
-                child: Icon(Icons.play_circle, size: 80, color: scheme.primary),
-              ),
-            ),
+          HlsPlayer(
+            key: ValueKey(episode.id),
+            episodeId: episode.id,
           ),
-          const SizedBox(height: 16),
-          Text(
-            'Прогресс просмотра',
-            style: Theme.of(context).textTheme.titleMedium,
-          ),
-          const SizedBox(height: 8),
-          Slider(
-            value: displayedProgress,
-            min: 0,
-            max: 1,
-            divisions: 20,
-            onChanged: _savingProgress || !canSave
-                ? null
-                : (value) => setState(() => _draftProgress = value),
-            onChangeEnd: _savingProgress || !canSave ? null : _saveProgress,
-          ),
-          Text(canSave ? '${(displayedProgress * 100).round()}% просмотрено' : 'Длительность пока неизвестна'),
-          const SizedBox(height: 8),
-          OutlinedButton.icon(
-            onPressed: _savingProgress || !canSave ? null :()=> _saveProgress(1.0),
-            icon: const Icon(Icons.check),
-            label: const Text('Отметить просмотренным'),
-          ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 24),
           Text(
             'Сезон ${episode.seasonNumber} · '
             '${episode.number} серия · ${episode.title}',
             style: Theme.of(context).textTheme.titleLarge,
           ),
           const SizedBox(height: 8),
-          Text(episode.duration, style: Theme.of(context).textTheme.bodyMedium),
+          Text(episode.duration),
           const SizedBox(height: 16),
           Text(
             episode.description,
             style: Theme.of(context).textTheme.bodyLarge,
           ),
           const SizedBox(height: 24),
-          Row(
-            children: [
-              Expanded(
-                child: OutlinedButton.icon(
-                  onPressed: previous == null || !previous.canWatch
-                      ? null
-                      : () => context.pushReplacementNamed(
-                          RouteNames.watch,
-                          pathParameters: {'episodeId': previous.id},
-                        ),
-                  icon: const Icon(Icons.skip_previous),
-                  label: const Text("Предыдущая"),
-                ),
-              ),
-            ],
+          OutlinedButton.icon(
+            onPressed: previous == null || !previous.canWatch
+                ? null
+                : () => context.pushReplacementNamed(
+                      RouteNames.watch,
+                      pathParameters: {'episodeId': previous.id},
+                    ),
+            icon: const Icon(Icons.skip_previous),
+            label: const Text('Предыдущая серия'),
           ),
           const SizedBox(height: 8),
-          Row(
-            children: [
-              Expanded(
-                child: FilledButton.icon(
-                  onPressed: next == null || !next.canWatch
-                      ? null
-                      : () => context.pushReplacementNamed(
-                          RouteNames.watch,
-                          pathParameters: {'episodeId': next.id},
-                        ),
-                  icon: const Icon(Icons.skip_next),
-                  label: const Text("Следующая"),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 24),
-          Card(
-            child: ListTile(
-              leading: const Icon(Icons.closed_caption),
-              title: const Text("Субтитры"),
-              subtitle: const Text("Русские"),
-              trailing: const Icon(Icons.chevron_right),
-              onTap: () {},
-            ),
-          ),
-          Card(
-            child: ListTile(
-              leading: const Icon(Icons.high_quality),
-              title: const Text("Качество"),
-              subtitle: const Text("1080p"),
-              trailing: const Icon(Icons.chevron_right),
-              onTap: () {},
-            ),
+          FilledButton.icon(
+            onPressed: next == null || !next.canWatch
+                ? null
+                : () => context.pushReplacementNamed(
+                      RouteNames.watch,
+                      pathParameters: {'episodeId': next.id},
+                    ),
+            icon: const Icon(Icons.skip_next),
+            label: const Text('Следующая серия'),
           ),
         ],
       ),
