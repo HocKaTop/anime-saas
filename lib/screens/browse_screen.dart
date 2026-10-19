@@ -8,6 +8,8 @@ import '../models/catalog_model.dart';
 import '../widgets/error_view.dart';
 import '../widgets/title_card.dart';
 import '../router_names.dart';
+import '../models/progress_model.dart';
+import '../widgets/continue_watching_section.dart';
 
 class BrowseScreen extends StatelessWidget {
   const new({super.key});
@@ -20,7 +22,8 @@ class BrowseScreen extends StatelessWidget {
         title: const Text('Creepy Oleg'),
         actions: [
           IconButton(
-            onPressed: () => context.read<CatalogModel>().load(),
+            onPressed: () { context.read<CatalogModel>().load();
+               context.read<ProgressModel>().loadContinueWatching();},
             icon: const Icon(Icons.refresh),
             tooltip: 'Обновить',
           ),
@@ -55,6 +58,7 @@ class BrowseScreen extends StatelessWidget {
     return ListView(
       padding: const EdgeInsets.symmetric(vertical: 16),
       children: [
+        const ContinueWatchingSection(),
         _buildSection(context, title: 'Популярное сейчас', titles: titles),
         const SizedBox(height: 24),
         _buildSection(

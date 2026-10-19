@@ -6,7 +6,9 @@ import '../repositories/progress_repository.dart';
 
 class ProgressModel extends ChangeNotifier {
   ProgressModel(this._repository);
-
+  List<WatchProgress> _continueWatching = const [];
+  bool _isContinueLoading = false;
+  String? _continueError;
   final ProgressRepository _repository;
 
   final Map<String, WatchProgress> _progress = {};
@@ -18,8 +20,18 @@ class ProgressModel extends ChangeNotifier {
   int _sessionVersion = 0;
   int _loadVersion = 0;
 
+  int _continueLoadVersion = 0;
+  int _continueSaveVersion = 0;
+
   bool get isLoading => _isLoading;
   String? get error => _error;
+
+  List<WatchProgress> get continueWatching =>
+    List.unmodifiable(_continueWatching);
+
+  bool get isContinueLoading => _isContinueLoading;
+
+  String? get continueError => _continueError;
 
   WatchProgress? byEpisode(String episodeId) {
     return _progress[episodeId];
@@ -59,6 +71,43 @@ class ProgressModel extends ChangeNotifier {
     _isLoading = false;
     notifyListeners();
   }
+
+  Future<void> loadContinueWatching() async {
+    final sessionVersion = _sessionVersion;
+   final loadVersion = ++_continueLoadVersion;
+   final saveVersion = _continueSaveVersion;
+
+    _isContinueLoading = true;
+    _continueError = null;
+    notifyListeners();
+
+    final result = await _repository.fetchContinueWatching();
+
+    if (sessionVersion != _sessionVersion ||
+        loadVersion != _continueLoadVersion) {
+      return;
+    }
+
+    // Ответ GET не заменяет более новое сохранение плеера.
+    if (saveVersion == _continueSaveVersion) {
+      switch (result) {
+        case Ok(:final value):
+          _continueWatching = value
+              .where(
+               (item) =>
+                   !item.completed && item.positionSec > 0,
+             )
+             .toList();
+
+       case Err(:final msg):
+          _continueError = msg;
+     }
+    }
+
+   _isContinueLoading = false;
+   notifyListeners();
+  }
+
 
   Future<String?> saveProgress(
     String episodeId,
@@ -118,6 +167,15 @@ class ProgressModel extends ChangeNotifier {
     switch (result) {
       case Ok(:final value):
         _progress[episodeId] = value;
+        _continueSaveVersion++;
+
+        final remaining =_continueWatching
+          .where((item) =>item.episodeId != episodeId)
+          .toList();
+        _continueWatching=[
+          if (!value.completed && value.positionSec >0)
+          value, ...remaining,
+        ].take(20).toList();
         notifyListeners();
         return null;
 
@@ -133,6 +191,11 @@ class ProgressModel extends ChangeNotifier {
     _saveVersions.clear();
     _isLoading = false;
     _error = null;
+    _continueLoadVersion++;
+    _continueSaveVersion++;
+    _continueWatching = const [];
+    _isContinueLoading=false;
+    _continueError = null;
     notifyListeners();
   }
 }

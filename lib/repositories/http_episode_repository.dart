@@ -67,24 +67,30 @@ class HttpEpisodeRepository implements EpisodeRepository {
 
   @override
   Future<Result<Episode>> fetchById(String id) {
-    final known = _knownEpisodes[id];
-
-    if (known == null) {
-      return Future.value(
-        const Err<Episode>(
-          'Сначала откройте карточку тайтла с этой серией',
-        ),
-      );
-    }
-
     return _client.get<Episode>(
       '/api/episodes/${Uri.encodeComponent(id)}',
       authenticated: false,
       decode: (json) {
+        final data = json as Map<String, dynamic>;
+        final known = _knownEpisodes[id];
+
+        final titleSlug =
+            data['titleSlug'] as String? ?? known?.titleSlug;
+
+        final seasonNumber =
+            (data['seasonNumber'] as num?)?.toInt() ??
+            known?.seasonNumber;
+
+        if (titleSlug == null || seasonNumber == null) {
+          throw const FormatException(
+            'В ответе серии отсутствует контекст тайтла',
+          );
+        }
+
         return Episode.fromJson(
-          json as Map<String, dynamic>,
-          titleSlug: known.titleSlug,
-          seasonNumber: known.seasonNumber,
+          data,
+          titleSlug: titleSlug,
+          seasonNumber: seasonNumber,
         );
       },
     );
