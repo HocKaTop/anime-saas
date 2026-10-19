@@ -28,6 +28,7 @@ class _HlsPlayerState extends State<HlsPlayer>
     with WidgetsBindingObserver {
   late final ApiClient _client;
   late final PlaybackApi _playback;
+  late final int _sessionVersion;
   late final ProgressModel _progress;
 
   final Set<Factory<OneSequenceGestureRecognizer>> _playerGestures = {
@@ -66,6 +67,7 @@ class _HlsPlayerState extends State<HlsPlayer>
     super.initState();
 
     _client = context.read<ApiClient>();
+    _sessionVersion = _client.tokens.sessionVersion;
     _playback = PlaybackApi(_client);
     _progress = context.read<ProgressModel>();
 
@@ -79,7 +81,12 @@ class _HlsPlayerState extends State<HlsPlayer>
   }
 
   Future<void> _open() async {
-    if (_opening || !mounted) return;
+    if (_opening ||
+        !mounted ||
+        _client.tokens.sessionVersion != _sessionVersion) {
+      return;
+    }
+
     _opening = true;
 
     try {
@@ -101,7 +108,10 @@ class _HlsPlayerState extends State<HlsPlayer>
       });
 
       final result = await _playback.getManifest(widget.episodeId);
-      if (!mounted) return;
+      if (!mounted ||
+          _client.tokens.sessionVersion != _sessionVersion) {
+        return;
+      }
 
       final Uri url;
 
@@ -115,7 +125,7 @@ class _HlsPlayerState extends State<HlsPlayer>
       }
 
       await _progress.loadEpisode(widget.episodeId);
-      if (!mounted) return;
+      if (!mounted || _client.tokens.sessionVersion != _sessionVersion) return;
 
       if (_progress.error != null) {
         _showError(_progress.error!);
@@ -170,6 +180,9 @@ class _HlsPlayerState extends State<HlsPlayer>
     _polling = true;
 
     try {
+      if (save && !await _refreshPlaybackToken()) {
+      return;
+      }
       final state = await channel
           .invokeMapMethod<String, dynamic>('state')
           .timeout(const Duration(seconds: 5));
@@ -232,40 +245,102 @@ class _HlsPlayerState extends State<HlsPlayer>
     }
   }
 
-  Future<void> _save() {
-    final token = _sessionToken;
+Future<bool> _refreshPlaybackToken() async {
+  final channel = _channel;
 
-    if (!_ready || token == null || _durationSec <= 0) {
-      return _saveQueue;
-    }
+  if (channel == null || !_ready) {
+    return true;
+  }
 
-    final episodeId = widget.episodeId;
-    final durationSec = _durationSec;
-    final positionSec = _positionSec.clamp(0, durationSec).toInt();
+  final result = await _client.accessToken(
+    expectedSession: _sessionVersion,
+  );
 
-    _saveQueue = _saveQueue.then((_) async {
-      if (await _client.tokens.read() != token) return;
-      if (_lastSavedPosition == positionSec) return;
+  if (!mounted ||
+      _channel != channel ||
+      _client.tokens.sessionVersion != _sessionVersion) {
+    return false;
+  }
 
-      final error = await _progress.savePosition(
-        episodeId,
-        positionSec: positionSec,
-        durationSec: durationSec,
-      );
+  switch (result) {
+    case Err(:final msg):
+      setState(() => _saveError = msg);
+      return false;
 
-      if (error == null) {
-        _lastSavedPosition = positionSec;
+    case Ok(:final value):
+      if (value == _sessionToken) {
+        return true;
       }
 
-      if (!mounted) return;
+      final current = _url;
 
-      setState(() {
-        _saveError = error;
-      });
-    });
+      if (current == null) {
+        return false;
+      }
 
+      final updated = current.replace(
+        queryParameters: {
+          ...current.queryParameters,
+          'access_token': value,
+        },
+      );
+
+      await channel.invokeMethod<void>(
+        'replaceSource',
+        {'url': updated.toString()},
+      ).timeout(const Duration(seconds: 5));
+
+      if (!mounted || _channel != channel) {
+        return false;
+      }
+
+      _sessionToken = value;
+      _url = updated;
+
+      return true;
+  }
+}
+
+  Future<void> _save() {
+  if (!_ready || _durationSec <= 0) {
     return _saveQueue;
   }
+
+  final episodeId = widget.episodeId;
+  final durationSec = _durationSec;
+  final positionSec =
+      _positionSec.clamp(0, durationSec).toInt();
+
+  _saveQueue = _saveQueue.then((_) async {
+    if (_client.tokens.sessionVersion != _sessionVersion) {
+      return;
+    }
+
+    if (_lastSavedPosition == positionSec) {
+      return;
+    }
+
+    final error = await _progress.savePosition(
+      episodeId,
+      positionSec: positionSec,
+      durationSec: durationSec,
+    );
+
+    if (error == null) {
+      _lastSavedPosition = positionSec;
+    }
+
+    if (!mounted) {
+      return;
+    }
+
+    setState(() {
+      _saveError = error;
+    });
+  });
+
+  return _saveQueue;
+}
 
   Future<void> _pauseAndSave() async {
     final channel = _channel;
@@ -324,12 +399,14 @@ class _HlsPlayerState extends State<HlsPlayer>
     }
   }
 
-  @override
+ @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state != AppLifecycleState.resumed) {
-      unawaited(_pauseAndSave());
-    }
+  if (state == AppLifecycleState.resumed) {
+    unawaited(_poll(save: true));
+  } else {
+    unawaited(_pauseAndSave());
   }
+}
 
   @override
   void dispose() {

@@ -7,11 +7,7 @@ class PlaybackApi {
   final ApiClient _client;
 
   Future<Result<Uri>> getManifest(String episodeId) async {
-    final token = await _client.tokens.read();
-
-    if (token == null || token.isEmpty) {
-      return const Err<Uri>('Войдите в аккаунт');
-    }
+    final version = _client.tokens.sessionVersion;
 
     final result = await _client.get<Uri?>(
       '/api/playback/episodes/'
@@ -19,45 +15,56 @@ class PlaybackApi {
       decode: (json) {
         final data = json as Map<String, dynamic>;
 
-        if (data['status'] != 'ready' || data['manifest'] == null) {
+        if (data['status'] != 'ready' ||
+            data['manifest'] == null) {
           return null;
         }
 
-        final manifest = data['manifest'] as Map<String, dynamic>;
+        final manifest =
+            data['manifest'] as Map<String, dynamic>;
         final address = manifest['url'] as String;
 
         if (address.trim().isEmpty) {
-          throw const FormatException('Empty manifest URL');
+          throw const FormatException('Empty URL');
         }
 
         final base = Uri.parse(_client.baseUrl);
         final url = base.resolve(address);
 
-        // Передаём токен только своему API.
         if (url.scheme != base.scheme ||
             url.host != base.host ||
             url.port != base.port) {
-          throw const FormatException('Unexpected manifest origin');
+          throw const FormatException('Unexpected origin');
         }
 
-        return url.replace(
-          queryParameters: {
-            ...url.queryParameters,
-            'access_token': token,
-          },
-        );
+        return url;
       },
     );
 
-    if (await _client.tokens.read() != token) {
-      return const Err<Uri>('Сессия изменилась — откройте серию снова');
-    }
+    switch (result) {
+      case Err(:final msg):
+        return Err<Uri>(msg);
 
-    return switch (result) {
-      Ok(:final value) => value == null
-          ? const Err<Uri>('Видео ещё не готово к просмотру')
-          : Ok<Uri>(value),
-      Err(:final msg) => Err<Uri>(msg),
-    };
+      case Ok(:final value):
+        if (value == null) {
+          return const Err<Uri>(
+            'Видео ещё не готово к просмотру',
+          );
+        }
+
+        return switch (
+          await _client.accessToken(expectedSession: version)
+        ) {
+          Ok(value: final token) => Ok<Uri>(
+              value.replace(
+                queryParameters: {
+                  ...value.queryParameters,
+                  'access_token': token,
+                },
+              ),
+            ),
+          Err(:final msg) => Err<Uri>(msg),
+        };
+    }
   }
 }

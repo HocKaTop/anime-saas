@@ -64,7 +64,9 @@ final class NativeHlsView: NSObject, FlutterPlatformView {
   private let container: NativePlayerContainer
   private let player = AVPlayer()
   private let channel: FlutterMethodChannel
-  private let startPosition: Double
+  private var startPosition: Double
+  private var resumePlayback = false
+  private var sourceVersion = 0
 
   private var ready = false
   private var restoring = false
@@ -129,6 +131,9 @@ final class NativeHlsView: NSObject, FlutterPlatformView {
         self.player.pause()
         result(self.snapshot())
 
+      case "replaceSource":
+      self.replaceSource(call.arguments, result: result)
+
       case "dispose":
         self.close()
         result(nil)
@@ -144,58 +149,111 @@ final class NativeHlsView: NSObject, FlutterPlatformView {
   }
 
   private func snapshot() -> [String: Any] {
-    guard let item = player.currentItem else {
-      return ["error": "Не удалось открыть видео"]
-    }
+  guard let item = player.currentItem else {
+    return ["error": "Не удалось открыть видео"]
+  }
 
-    if item.status == .failed {
-      return [
-        "error":
-          "Не удалось загрузить видео. Проверьте соединение и доступ к просмотру"
-      ]
-    }
+  if item.status == .failed {
+    return [
+      "error":
+        "Не удалось загрузить видео. Проверьте соединение и доступ к просмотру"
+    ]
+  }
 
-    // Сначала восстанавливаем позицию, затем показываем управление.
-    if item.status == .readyToPlay && !ready && !restoring {
-      restoring = true
+  if item.status == .readyToPlay && !ready && !restoring {
+    restoring = true
 
-      let duration = item.duration.seconds
-      let position = duration.isFinite && duration > 0
-        ? min(startPosition, duration)
-        : startPosition
+    let duration = item.duration.seconds
+    let position = duration.isFinite && duration > 0
+      ? min(startPosition, duration)
+      : startPosition
 
-      if position == 0 {
-        ready = true
-        restoring = false
-        container.controller.showsPlaybackControls = true
-      } else {
-        player.seek(
-          to: CMTime(seconds: position, preferredTimescale: 600),
-          toleranceBefore: .zero,
-          toleranceAfter: .zero
-        ) { [weak self] finished in
-          DispatchQueue.main.async {
-            guard let self = self, !self.disposed else {
-              return
-            }
+    if position == 0 {
+      ready = true
+      restoring = false
+      container.controller.showsPlaybackControls = true
 
-            self.restoring = false
-            self.ready = finished
-            self.container.controller.showsPlaybackControls = finished
+      if resumePlayback {
+        player.play()
+      }
+
+      resumePlayback = false
+    } else {
+      let version = sourceVersion
+
+      player.seek(
+        to: CMTime(seconds: position, preferredTimescale: 600),
+        toleranceBefore: .zero,
+        toleranceAfter: .zero
+      ) { [weak self] finished in
+        DispatchQueue.main.async {
+          guard let self = self,
+                !self.disposed,
+                self.sourceVersion == version else {
+            return
+          }
+
+          self.restoring = false
+          self.ready = finished
+          self.container.controller.showsPlaybackControls = finished
+
+          if finished && self.resumePlayback {
+            self.resumePlayback = false
+            self.player.play()
           }
         }
       }
     }
+  }
 
-    let duration = item.duration.seconds
-    let position = player.currentTime().seconds
+  let duration = item.duration.seconds
+  let position = player.currentTime().seconds
 
-    return [
-      "ready": ready,
-      "positionSec": position.isFinite ? Int(max(0, position)) : 0,
-      "durationSec": duration.isFinite ? Int(max(0, duration)) : 0,
-      "playing": player.timeControlStatus == .playing
-    ]
+  return [
+    "ready": ready,
+    "positionSec": position.isFinite ? Int(max(0, position)) : 0,
+    "durationSec": duration.isFinite ? Int(max(0, duration)) : 0,
+    "playing": player.timeControlStatus == .playing
+  ]
+}
+
+  private func replaceSource(
+  _ args: Any?,
+  result: FlutterResult
+) {
+  guard let values = args as? [String: Any],
+        let address = values["url"] as? String,
+        let url = URL(string: address),
+        url.scheme == "http" || url.scheme == "https" else {
+    result(
+      FlutterError(
+        code: "invalid_url",
+        message: "Invalid video URL",
+        details: nil
+      )
+    )
+    return
+  }
+
+  let position = player.currentTime().seconds
+
+  if position.isFinite {
+    startPosition = max(0, position)
+  }
+
+  resumePlayback = player.timeControlStatus != .paused
+  sourceVersion += 1
+
+  player.pause()
+
+  ready = false
+  restoring = false
+  container.controller.showsPlaybackControls = false
+
+  // Сохраняем существующие AVPlayer и AVPlayerViewController.
+  player.replaceCurrentItem(with: AVPlayerItem(url: url))
+
+  result(nil)
   }
 
   private func close() {
@@ -204,6 +262,7 @@ final class NativeHlsView: NSObject, FlutterPlatformView {
     }
 
     disposed = true
+    sourceVersion += 1
     channel.setMethodCallHandler(nil)
 
     player.pause()
