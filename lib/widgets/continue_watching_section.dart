@@ -84,7 +84,7 @@ class _ContinueWatchingSectionState
             ),
           if (items.isNotEmpty)
             SizedBox(
-              height: 250,
+              height: 300,
               child: ListView.separated(
                 scrollDirection: Axis.horizontal,
                 padding:
@@ -256,7 +256,7 @@ class _ResumeCardState extends State<_ResumeCard> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     SizedBox(
-                      height: 90,
+                      height: 160,
                       width: double.infinity,
                       child: poster == null
                           ? const Icon(

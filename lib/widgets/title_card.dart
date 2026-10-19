@@ -28,7 +28,7 @@ class TitleCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children:[
             Container(
-              height:120,
+              height:210,
               width: double.infinity,
               color: scheme.primaryContainer,
               child: anime.posterUrl == null
@@ -40,7 +40,7 @@ class TitleCard extends StatelessWidget {
                   : Image.network(
                     anime.posterUrl!,
                     width: double.infinity,
-                    height: 120,
+                    height: 210,
                     fit: BoxFit.cover,
                     errorBuilder: (context,error,stackTrace){
                       return Icon(
