@@ -229,6 +229,7 @@ class ApiClient {
     T Function(Object?) decode, {
     Map<String, Object?>? body,
     required bool authenticated,
+    String? Function(Object?)? unauthorizedMessage,
   }) async {
     final version = tokens.sessionVersion;
 
@@ -275,6 +276,14 @@ class ApiClient {
         }
 
         if (authenticated && response.statusCode == 401) {
+          if (unauthorizedMessage != null){
+            final message = unauthorizedMessage(
+              jsonDecode(utf8.decode(response.bodyBytes)),
+            );
+            if (message!=null){
+              return Err<T>(message);
+            }
+          }
           if (attempt == 1) {
             await _expire(version, token);
 
@@ -340,5 +349,22 @@ class ApiClient {
     if (cleared && tokens.sessionVersion == version + 1) {
       onUnauthorized();
     }
+  }
+
+    Future<Result<T>> patch<T>(
+    String path, {
+    required T Function(Object?) decode,
+    Map<String, Object?>? body,
+    bool authenticated = true,
+    String? Function(Object?)? unauthorizedMessage,
+  }) {
+    return _request(
+     'PATCH',
+     path,
+     decode,
+     body: body,
+     authenticated: authenticated,
+     unauthorizedMessage: unauthorizedMessage,
+    );
   }
 }

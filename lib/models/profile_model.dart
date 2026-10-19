@@ -18,6 +18,16 @@ class ProfileModel extends ChangeNotifier {
   String? get error => _error;
   bool get isLoading => _isLoading;
 
+  void setUser(AuthUser user){
+    if(_user?.id != user.id) return;
+
+      _revision++;
+      _user=user;
+      _error=null;
+      _isLoading=false;
+      notifyListeners();
+  }
+
   Future<void> load() async {
     if (_isLoading) return;
 

@@ -6,6 +6,7 @@ import '../models/profile_model.dart';
 import '../router_names.dart';
 import '../data/auth_api.dart';
 import '../data/result.dart';
+import '../widgets/profile_settings_panel.dart';
 
 class AccountScreen extends StatefulWidget {
   const AccountScreen({super.key});
@@ -101,6 +102,11 @@ class _AccountScreenState extends State<AccountScreen> {
             style: Theme.of(context).textTheme.headlineMedium,
           ),
           const SizedBox(height:32),
+          ProfileSettingsPanel(
+            key: ValueKey(user.id),
+            nickname: user.nickname,
+          ),
+          const SizedBox(height: 32,),
           FilledButton.icon(
             onPressed: _logout,
             icon : const Icon(Icons.logout),
