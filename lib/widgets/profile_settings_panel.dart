@@ -131,8 +131,10 @@ class _ProfileSettingsPanelState
 
     final result = await _api.updateNickname(first);
 
-    if (!_active) {
-      return 'Сессия изменилась';
+
+    if (!mounted ||
+      _client.tokens.sessionVersion != _sessionVersion) {
+    return 'Сессия изменилась';
     }
 
     switch (result) {
